@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI K3 Kemnaker - Skripsi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Desain scrollbar yang elegan */
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        /* Animasi muncul (fade-in) biar mulus */
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans h-screen overflow-hidden flex flex-col selection:bg-blue-200">
+
+    <div id="landing-page" class="flex flex-col items-center justify-center h-full px-6 text-center transition-all duration-500">
+        <div class="max-w-3xl fade-in">
+            <div class="bg-blue-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 mb-4 tracking-tight">
+                Sistem Informasi <span class="text-blue-600">AI K3</span>
+            </h1>
+            <p class="text-lg text-slate-500 mb-10 leading-relaxed">
+                Asisten cerdas berbasis <span class="font-semibold">LLM & RAG</span> untuk eksplorasi dokumen peraturan Keselamatan dan Kesehatan Kerja (K3) dari JDIH Kemnaker RI.
+            </p>
+            
+            <button onclick="bukaChat()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:shadow-blue-600/30 transition-all duration-300 transform hover:-translate-y-1">
+                Mulai Konsultasi
+            </button>
+        </div>
+        
+        <div class="absolute bottom-6 text-sm text-slate-400 font-medium">
+            Dikembangkan untuk Project Skripsi &copy; 2026
+        </div>
+    </div>
+
+    <div id="chat-section" class="hidden flex-col h-full max-w-4xl mx-auto w-full bg-white shadow-2xl md:rounded-t-2xl md:mt-6 transition-all fade-in">
+        
+        <div class="bg-blue-600 text-white p-4 md:rounded-t-2xl flex justify-between items-center shadow-md z-10">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-full text-xl backdrop-blur-sm">🤖</div>
+                <div>
+                    <h2 class="font-bold text-lg leading-tight">Asisten Ahli K3</h2>
+                    <p class="text-xs text-blue-100">Sumber Data: Dokumen JDIH Kemnaker</p>
+                </div>
+            </div>
+            <button onclick="kembaliKeLanding()" class="text-blue-100 hover:text-white text-sm font-medium transition-colors">
+                &larr; Kembali
+            </button>
+        </div>
+
+        <div id="chat-box" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 chat-scroll bg-[#f8fafc]">
+            <div class="flex items-start gap-3 fade-in">
+                <div class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm shadow-sm">🤖</div>
+                <div class="bg-white border border-slate-200 text-slate-700 p-4 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] leading-relaxed text-[15px]">
+                    Halo! Saya adalah Asisten AI yang dilatih khusus dengan dokumen peraturan K3. Silakan tanyakan pasal, syarat, atau regulasi yang Anda butuhkan.
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-white border-t border-slate-100 md:rounded-b-2xl">
+            <input type="hidden" id="csrf_token" value="{{ csrf_token }}">
+            
+            <div class="flex gap-2">
+                <input type="text" id="user-input" placeholder="Tanyakan seputar regulasi K3..." class="flex-1 border border-slate-300 rounded-full px-5 py-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-[15px]" onkeypress="handleEnter(event)">
+                <button id="send-btn" onclick="kirimPesan()" class="bg-blue-600 hover:bg-blue-700 text-white w-12 h-12 rounded-full shadow-md flex items-center justify-center transition-all disabled:bg-slate-300 disabled:cursor-not-allowed">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const landingPage = document.getElementById('landing-page');
+        const chatSection = document.getElementById('chat-section');
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const csrfToken = document.getElementById('csrf_token').value;
+
+        // Efek transisi buka halaman chat
+        function bukaChat() {
+            landingPage.classList.add('hidden');
+            chatSection.classList.remove('hidden');
+            chatSection.classList.add('flex');
+            setTimeout(() => userInput.focus(), 100);
+        }
+
+        // Efek transisi kembali ke landing page
+        function kembaliKeLanding() {
+            chatSection.classList.add('hidden');
+            chatSection.classList.remove('flex');
+            landingPage.classList.remove('hidden');
+        }
+
+        // Kalau user pencet Enter
+        function handleEnter(e) {
+            if (e.key === 'Enter') kirimPesan();
+        }
+
+        // Fungsi mencetak desain pesan ke layar
+        function tambahPesan(teks, pengirim) {
+            const div = document.createElement('div');
+            div.className = "flex items-start gap-3 fade-in w-full " + (pengirim === 'user' ? "justify-end" : "");
+            
+            let htmlKonten = '';
+            
+            if (pengirim === 'user') {
+                htmlKonten = `
+                    <div class="bg-slate-800 text-white p-4 rounded-2xl rounded-tr-none shadow-sm max-w-[85%] leading-relaxed text-[15px]">
+                        ${teks}
+                    </div>
+                `;
+            } else { // Bot
+                htmlKonten = `
+                    <div class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm shadow-sm">🤖</div>
+                    <div class="bg-white border border-slate-200 text-slate-700 p-4 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] leading-relaxed text-[15px]">
+                        ${teks}
+                    </div>
+                `;
+            }
+            
+            div.innerHTML = htmlKonten;
+            div.id = 'msg-' + Date.now();
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return div.id;
+        }
+
+        // Fungsi ngejalanin loading muter-muter
+        function tambahLoading() {
+            const div = document.createElement('div');
+            div.className = "flex items-start gap-3 fade-in";
+            div.id = 'loading-indicator';
+            div.innerHTML = `
+                <div class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm shadow-sm">🤖</div>
+                <div class="bg-white border border-slate-200 text-slate-500 p-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <span>Mencari di dokumen Kemnaker...</span>
+                </div>
+            `;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return div.id;
+        }
+
+        // Core logic: Kirim pesan ke Backend Django
+        async function kirimPesan() {
+            const pesan = userInput.value.trim();
+            if (!pesan) return;
+
+            // Render pesan user
+            tambahPesan(pesan, 'user');
+            userInput.value = '';
+            
+            // Disable input biar gak spam
+            sendBtn.disabled = true;
+            userInput.disabled = true;
+            
+            // Render loading animation
+            const loadingId = tambahLoading();
+
+            try {
+                // Tembak ke URL API kita
+                const response = await fetch('/api/chat/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ pesan: pesan })
+                });
+
+                const data = await response.json();
+                
+                // Hapus loading, ganti dengan teks dari AI RAG
+                document.getElementById(loadingId).remove();
+                
+                // Render teks AI. Karena ini web, kita ubah enter (\n) jadi <br> biar formatnya rapi
+                const teksJawaban = data.jawaban.replace(/\n/g, '<br>');
+                tambahPesan(teksJawaban, 'bot');
+
+            } catch (error) {x
+                document.getElementById(loadingId).remove();
+                tambahPesan("Mohon maaf, terjadi kesalahan koneksi ke server. Silakan coba lagi.", 'bot');
+            }
+
+            // Nyalakan input lagi
+            sendBtn.disabled = false;
+            userInput.disabled = false;
+            userInput.focus();
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>

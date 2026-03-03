@@ -1,0 +1,25 @@
+"""
+URL configuration for llmwebsite project.
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/5.2/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+from django.contrib import admin
+from django.urls import path
+from chatbot import views # Import views yang barusan kita bikin
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', views.halaman_chat, name='halaman_chat'), # Halaman utama (UI)
+    path('api/chat/', views.api_chat, name='api_chat'), # Jalur rahasia buat ngirim pesan ke AI
+]
