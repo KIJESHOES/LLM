@@ -15,11 +15,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from chatbot import views # Import views yang barusan kita bikin
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.halaman_chat, name='halaman_chat'), # Halaman utama (UI)
-    path('api/chat/', views.api_chat, name='api_chat'), # Jalur rahasia buat ngirim pesan ke AI
+    # This line tells Django to look at chatbot/urls.py for all other routes
+    path('', include('chatbot.urls')), 
 ]

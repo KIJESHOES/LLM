@@ -3,202 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI K3 Kemnaker - Skripsi</title>
+    <title>AI K3 Kemnaker - Dashboard & Chat</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Desain scrollbar yang elegan */
-        .chat-scroll::-webkit-scrollbar { width: 6px; }
-        .chat-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-        /* Animasi muncul (fade-in) biar mulus */
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .chat-scroll::-webkit-scrollbar { width: 5px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background-color: #e2e8f0; border-radius: 10px; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .active-menu { background-color: #eff6ff; color: #1d4ed8; border-right: 4px solid #2563eb; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans h-screen overflow-hidden flex flex-col selection:bg-blue-200">
+<body class="bg-slate-50 text-slate-800 font-sans h-screen overflow-hidden flex selection:bg-blue-200">
 
-    <div id="landing-page" class="flex flex-col items-center justify-center h-full px-6 text-center transition-all duration-500">
-        <div class="max-w-3xl fade-in">
-            <div class="bg-blue-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-            </div>
-            
-            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 mb-4 tracking-tight">
-                Sistem Informasi <span class="text-blue-600">AI K3</span>
+    <aside id="sidebar" class="hidden w-64 bg-white border-r border-slate-200 flex-col shrink-0 z-20">
+        <div class="p-6">
+            <h1 class="text-xl font-bold text-blue-600 flex items-center gap-2">
+                <span class="text-2xl">🛡️</span> AI-K3 PRO
             </h1>
-            <p class="text-lg text-slate-500 mb-10 leading-relaxed">
-                Asisten cerdas berbasis <span class="font-semibold">LLM & RAG</span> untuk eksplorasi dokumen peraturan Keselamatan dan Kesehatan Kerja (K3) dari JDIH Kemnaker RI.
-            </p>
-            
-            <button onclick="bukaChat()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:shadow-blue-600/30 transition-all duration-300 transform hover:-translate-y-1">
-                Mulai Konsultasi
-            </button>
         </div>
         
-        <div class="absolute bottom-6 text-sm text-slate-400 font-medium">
-            Dikembangkan untuk Project Skripsi &copy; 2026
-        </div>
-    </div>
+        <nav class="flex-1 px-4 space-y-2">
+            <button onclick="switchTab('chat')" id="menu-chat" class="active-menu w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-lg transition-all">
+                <span>💬</span> Konsultasi Chat
+            </button>
+            <button onclick="switchTab('dashboard')" id="menu-dashboard" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
+                <span>📊</span> Analisis Akurasi
+            </button>
+        </nav>
 
-    <div id="chat-section" class="hidden flex-col h-full max-w-4xl mx-auto w-full bg-white shadow-2xl md:rounded-t-2xl md:mt-6 transition-all fade-in">
-        
-        <div class="bg-blue-600 text-white p-4 md:rounded-t-2xl flex justify-between items-center shadow-md z-10">
-            <div class="flex items-center gap-3">
-                <div class="bg-white/20 p-2 rounded-full text-xl backdrop-blur-sm">🤖</div>
-                <div>
-                    <h2 class="font-bold text-lg leading-tight">Asisten Ahli K3</h2>
-                    <p class="text-xs text-blue-100">Sumber Data: Dokumen JDIH Kemnaker</p>
-                </div>
-            </div>
-            <button onclick="kembaliKeLanding()" class="text-blue-100 hover:text-white text-sm font-medium transition-colors">
-                &larr; Kembali
+        <div class="p-6 border-t border-slate-100">
+            <button onclick="location.reload()" class="text-xs text-slate-400 hover:text-red-500 transition-colors">
+                Keluar Sistem
             </button>
         </div>
+    </aside>
 
-        <div id="chat-box" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 chat-scroll bg-[#f8fafc]">
-            <div class="flex items-start gap-3 fade-in">
-                <div class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm shadow-sm">🤖</div>
-                <div class="bg-white border border-slate-200 text-slate-700 p-4 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] leading-relaxed text-[15px]">
-                    Halo! Saya adalah Asisten AI yang dilatih khusus dengan dokumen peraturan K3. Silakan tanyakan pasal, syarat, atau regulasi yang Anda butuhkan.
-                </div>
-            </div>
-        </div>
-
-        <div class="p-4 bg-white border-t border-slate-100 md:rounded-b-2xl">
-            <input type="hidden" id="csrf_token" value="{{ csrf_token }}">
-            
-            <div class="flex gap-2">
-                <input type="text" id="user-input" placeholder="Tanyakan seputar regulasi K3..." class="flex-1 border border-slate-300 rounded-full px-5 py-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-[15px]" onkeypress="handleEnter(event)">
-                <button id="send-btn" onclick="kirimPesan()" class="bg-blue-600 hover:bg-blue-700 text-white w-12 h-12 rounded-full shadow-md flex items-center justify-center transition-all disabled:bg-slate-300 disabled:cursor-not-allowed">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+        
+        <div id="landing-page" class="absolute inset-0 z-50 bg-slate-50 flex flex-col items-center justify-center px-6 text-center transition-all duration-500">
+            <div class="max-w-3xl fade-in">
+                <div class="bg-blue-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                </button>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 mb-4 tracking-tight">Sistem Informasi <span class="text-blue-600">AI K3</span></h1>
+                <p class="text-lg text-slate-500 mb-10">Asisten cerdas berbasis <span class="font-semibold">LLM & RAG</span> untuk eksplorasi dokumen peraturan JDIH Kemnaker RI.</p>
+                <button onclick="bukaSistem()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-10 rounded-full shadow-lg transition-all transform hover:-translate-y-1">Mulai Konsultasi</button>
             </div>
+            <div class="absolute bottom-6 text-sm text-slate-400">Project Skripsi &copy; 2026</div>
         </div>
+
+        <section id="section-chat" class="hidden flex-col h-full bg-white">
+            <header class="h-16 border-b border-slate-100 flex items-center px-8 justify-between bg-white shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <h2 class="font-bold text-slate-700 uppercase tracking-wider text-sm">Chat AI Mode</h2>
+                </div>
+            </header>
+
+            <div id="chat-box" class="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 chat-scroll">
+                <div class="flex items-start gap-4 fade-in max-w-3xl">
+                    <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
+                    <div class="bg-slate-50 border border-slate-100 text-slate-700 p-5 rounded-2xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
+                        Halo! Saya asisten regulasi K3 Anda. Apa yang ingin Anda tanyakan hari ini terkait dokumen JDIH Kemnaker?
+                    </div>
+                </div>
+            </div>
+
+            <footer class="p-6 border-t border-slate-100 bg-white">
+                <div class="max-w-4xl mx-auto relative flex items-center gap-3">
+                    <input type="hidden" id="csrf_token" value="{{ csrf_token }}">
+                    <input type="text" id="user-input" placeholder="Tanyakan pasal atau regulasi..." 
+                           class="flex-1 bg-slate-100 border-none rounded-2xl px-6 py-4 focus:ring-2 focus:ring-blue-500 outline-none text-[15px] transition-all" 
+                           onkeypress="handleEnter(event)">
+                    <button id="send-btn" onclick="kirimPesan()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold transition-all disabled:bg-slate-300">
+                        Kirim
+                    </button>
+                </div>
+            </footer>
+        </section>
+
+        <section id="section-dashboard" class="hidden flex-col h-full bg-slate-50 overflow-y-auto p-8 md:p-12">
+            <div class="max-w-6xl mx-auto w-full">
+                <h2 class="text-3xl font-black text-slate-800 mb-2">Statistik Akurasi Sistem</h2>
+                <p class="text-slate-500 mb-10 text-lg">Evaluasi performa RAG (Retrieval-Augmented Generation) secara Real-Time.</p>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                        <p class="text-slate-400 text-sm font-bold uppercase tracking-widest">Total Pengujian</p>
+                        <h3 class="text-5xl font-black text-blue-600 mt-2">{{ total_uji }}</h3>
+                        <p class="text-xs text-slate-400 mt-2">Permintaan yang berhasil diproses</p>
+                    </div>
+                    <div class="lg:col-span-2 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                        <h4 class="font-bold text-slate-700 mb-6 flex items-center gap-2">
+                            <span class="w-2 h-6 bg-blue-600 rounded-full"></span> Tren Skor Akurasi
+                        </h4>
+                        <div class="h-64">
+                            <canvas id="accuracyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-blue-600 rounded-3xl p-8 text-white shadow-xl flex items-center gap-8">
+                    <div class="text-5xl">💡</div>
+                    <div>
+                        <h4 class="text-xl font-bold mb-1">Metodologi Pengukuran</h4>
+                        <p class="opacity-80 text-sm leading-relaxed">Akurasi dihitung menggunakan <strong>Sequence Similarity Ratio</strong> antara jawaban yang dihasilkan AI dengan potongan teks (chunk) yang ditemukan dalam database vektor PDF.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </div>
 
     <script>
         const landingPage = document.getElementById('landing-page');
-        const chatSection = document.getElementById('chat-section');
+        const sidebar = document.getElementById('sidebar');
+        const chatSec = document.getElementById('section-chat');
+        const dashSec = document.getElementById('section-dashboard');
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
-        const csrfToken = document.getElementById('csrf_token').value;
 
-        // Efek transisi buka halaman chat
-        function bukaChat() {
-            landingPage.classList.add('hidden');
-            chatSection.classList.remove('hidden');
-            chatSection.classList.add('flex');
-            setTimeout(() => userInput.focus(), 100);
+        // Navigasi
+        function bukaSistem() {
+            landingPage.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                landingPage.style.display = 'none';
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex');
+                chatSec.classList.remove('hidden');
+                chatSec.classList.add('flex');
+            }, 500);
         }
 
-        // Efek transisi kembali ke landing page
-        function kembaliKeLanding() {
-            chatSection.classList.add('hidden');
-            chatSection.classList.remove('flex');
-            landingPage.classList.remove('hidden');
-        }
-
-        // Kalau user pencet Enter
-        function handleEnter(e) {
-            if (e.key === 'Enter') kirimPesan();
-        }
-
-        // Fungsi mencetak desain pesan ke layar
-        function tambahPesan(teks, pengirim) {
-            const div = document.createElement('div');
-            div.className = "flex items-start gap-3 fade-in w-full " + (pengirim === 'user' ? "justify-end" : "");
+        function switchTab(tab) {
+            const mChat = document.getElementById('menu-chat');
+            const mDash = document.getElementById('menu-dashboard');
             
-            let htmlKonten = '';
-            
-            if (pengirim === 'user') {
-                htmlKonten = `
-                    <div class="bg-slate-800 text-white p-4 rounded-2xl rounded-tr-none shadow-sm max-w-[85%] leading-relaxed text-[15px]">
-                        ${teks}
-                    </div>
-                `;
-            } else { // Bot
-                htmlKonten = `
-                    <div class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm shadow-sm">🤖</div>
-                    <div class="bg-white border border-slate-200 text-slate-700 p-4 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] leading-relaxed text-[15px]">
-                        ${teks}
-                    </div>
-                `;
+            if(tab === 'chat') {
+                chatSec.classList.remove('hidden'); chatSec.classList.add('flex');
+                dashSec.classList.add('hidden');
+                mChat.classList.add('active-menu'); mDash.classList.remove('active-menu');
+            } else {
+                dashSec.classList.remove('hidden');
+                chatSec.classList.add('hidden');
+                mDash.classList.add('active-menu'); mChat.classList.remove('active-menu');
+                initChart(); // Re-render chart
             }
-            
-            div.innerHTML = htmlKonten;
-            div.id = 'msg-' + Date.now();
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
-            return div.id;
         }
 
-        // Fungsi ngejalanin loading muter-muter
-        function tambahLoading() {
-            const div = document.createElement('div');
-            div.className = "flex items-start gap-3 fade-in";
-            div.id = 'loading-indicator';
-            div.innerHTML = `
-                <div class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm shadow-sm">🤖</div>
-                <div class="bg-white border border-slate-200 text-slate-500 p-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
-                    <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <span>Mencari di dokumen Kemnaker...</span>
-                </div>
-            `;
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
-            return div.id;
-        }
+        function handleEnter(e) { if (e.key === 'Enter') kirimPesan(); }
 
-        // Core logic: Kirim pesan ke Backend Django
+        // Fungsi Chat
         async function kirimPesan() {
             const pesan = userInput.value.trim();
             if (!pesan) return;
 
-            // Render pesan user
-            tambahPesan(pesan, 'user');
+            // Render User Message (Full Screen style)
+            chatBox.innerHTML += `
+                <div class="flex justify-end fade-in w-full">
+                    <div class="bg-slate-800 text-white p-5 rounded-3xl rounded-tr-none shadow-md max-w-[75%] text-[15px]">
+                        ${pesan}
+                    </div>
+                </div>`;
+            
             userInput.value = '';
-            
-            // Disable input biar gak spam
-            sendBtn.disabled = true;
-            userInput.disabled = true;
-            
-            // Render loading animation
-            const loadingId = tambahLoading();
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Loading
+            const loadingId = 'load-' + Date.now();
+            chatBox.innerHTML += `
+                <div id="${loadingId}" class="flex items-center gap-3 text-slate-400 animate-pulse italic text-sm">
+                    <div class="w-2 h-2 bg-blue-400 rounded-full"></div> AI sedang menganalisis dokumen...
+                </div>`;
 
             try {
-                // Tembak ke URL API kita
                 const response = await fetch('/api/chat/', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.getElementById('csrf_token').value },
                     body: JSON.stringify({ pesan: pesan })
                 });
-
                 const data = await response.json();
-                
-                // Hapus loading, ganti dengan teks dari AI RAG
                 document.getElementById(loadingId).remove();
-                
-                // Render teks AI. Karena ini web, kita ubah enter (\n) jadi <br> biar formatnya rapi
-                const teksJawaban = data.jawaban.replace(/\n/g, '<br>');
-                tambahPesan(teksJawaban, 'bot');
 
-            } catch (error) {x
-                document.getElementById(loadingId).remove();
-                tambahPesan("Mohon maaf, terjadi kesalahan koneksi ke server. Silakan coba lagi.", 'bot');
+                // Render Bot Message dengan info Akurasi
+                chatBox.innerHTML += `
+                    <div class="flex items-start gap-4 fade-in max-w-4xl">
+                        <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
+                        <div class="flex flex-col gap-2 max-w-[85%]">
+                            <div class="bg-white border border-slate-200 text-slate-700 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
+                                ${data.jawaban.replace(/\n/g, '<br>')}
+                            </div>
+                            <div class="flex items-center gap-2 px-2">
+                                <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Akurasi Konteks:</span>
+                                <div class="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-500" style="width: ${data.skor * 100}%"></div>
+                                </div>
+                                <span class="text-[10px] font-bold text-slate-400">${(data.skor * 100).toFixed(0)}%</span>
+                            </div>
+                        </div>
+                    </div>`;
+            } catch (e) {
+                document.getElementById(loadingId).innerText = "Error koneksi server.";
             }
-
-            // Nyalakan input lagi
-            sendBtn.disabled = false;
-            userInput.disabled = false;
-            userInput.focus();
             chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Setup Chart.js
+        function initChart() {
+            const ctx = document.getElementById('accuracyChart').getContext('2d');
+            // Menghindari duplikasi chart saat pindah tab
+            if (window.myChart) window.myChart.destroy();
+            
+            window.myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: {{ label_grafik|safe }},
+                    datasets: [{
+                        label: 'Skor Akurasi',
+                        data: {{ data_grafik|safe }},
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 4,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#2563eb',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 1, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
         }
     </script>
 </body>
