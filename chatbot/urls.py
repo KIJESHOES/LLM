@@ -2,9 +2,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # Manggil fungsi chat_view dari views.py buat nampilin web
-    path('', views.chat_view, name='chat_view'), 
+    # Ganti views.chat_view jadi views.halaman_utama
+    path('', views.halaman_utama, name='halaman_utama'),
     
-    # Endpoint API buat chat RAG-nya
+    # API buat ngirim pesan
     path('api/chat/', views.api_chat, name='api_chat'),
+    
+    # API buat narik riwayat chat
+    path('api/history/<str:session_id>/', views.get_history, name='get_history'),
 ]

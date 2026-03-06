@@ -22,3 +22,4 @@ urlpatterns = [
     # This line tells Django to look at chatbot/urls.py for all other routes
     path('', include('chatbot.urls')), 
 ]
+

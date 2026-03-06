@@ -71,5 +71,9 @@ def tanya_bot_k3(pertanyaan):
     jawaban_ai = llm.invoke(prompt_ke_ai).content
     riwayat_chat.append({"user": pertanyaan, "ai": jawaban_ai})
     if len(riwayat_chat) > 3: riwayat_chat.pop(0)
+
+    # Menambahkan skor default agar unpacking tidak error.
+    # Ingat untuk mengganti ini dengan perhitungan skor sebenarnya nanti.
+    skor_ai = 0.99
         
-    return jawaban_ai
+    return jawaban_ai, skor_ai

@@ -23,13 +23,34 @@
             </h1>
         </div>
         
-        <nav class="flex-1 px-4 space-y-2">
-            <button onclick="switchTab('chat')" id="menu-chat" class="active-menu w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-lg transition-all">
-                <span>💬</span> Konsultasi Chat
+        <nav class="flex-1 flex flex-col px-4 gap-2 overflow-hidden pb-4">
+            <button onclick="chatBaru()" id="menu-chat" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Chat Baru
             </button>
-            <button onclick="switchTab('dashboard')" id="menu-dashboard" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
+
+            <button onclick="switchTab('dashboard')" id="menu-dashboard" class="w-full flex items-center gap-3 px-4 py-3 mt-2 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
                 <span>📊</span> Analisis Akurasi
             </button>
+
+            <hr class="border-slate-200 my-2">
+
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-2 mt-1 mb-2">
+                Riwayat Obrolan
+            </div>
+            
+            <div class="flex-1 overflow-y-auto space-y-1 pr-1 chat-scroll" id="history-list">
+                {% for sesi in riwayat_sesi %}
+                <button onclick="bukaHistory('{{ sesi.id }}')" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-all text-left group">
+                    <span class="text-lg opacity-50 group-hover:opacity-70">💬</span> 
+                    <span class="truncate">{{ sesi.judul }}</span>
+                </button>
+                {% empty %}
+                <div class="text-xs text-center text-slate-400 mt-4">Belum ada riwayat</div>
+                {% endfor %}
+            </div>
         </nav>
 
         <div class="p-6 border-t border-slate-100">
@@ -64,7 +85,7 @@
             </header>
 
             <div id="chat-box" class="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 chat-scroll">
-                <div class="flex items-start gap-4 fade-in max-w-3xl">
+                <div class="flex items-start gap-4 fade-in max-w-3xl mb-6">
                     <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
                     <div class="bg-slate-50 border border-slate-100 text-slate-700 p-5 rounded-2xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
                         Halo! Saya asisten regulasi K3 Anda. Apa yang ingin Anda tanyakan hari ini terkait dokumen JDIH Kemnaker?
@@ -93,7 +114,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
                     <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
                         <p class="text-slate-400 text-sm font-bold uppercase tracking-widest">Total Pengujian</p>
-                        <h3 class="text-5xl font-black text-blue-600 mt-2">{{ total_uji }}</h3>
+                        <h3 class="text-5xl font-black text-blue-600 mt-2">{{ total_uji|default:"0" }}</h3>
                         <p class="text-xs text-slate-400 mt-2">Permintaan yang berhasil diproses</p>
                     </div>
                     <div class="lg:col-span-2 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
@@ -127,7 +148,10 @@
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
 
-        // Navigasi
+        // VARIABEL PENTING BUAT DATABASE
+        let currentSessionId = null;
+
+        // Navigasi UI
         function bukaSistem() {
             landingPage.classList.add('opacity-0', 'pointer-events-none');
             setTimeout(() => {
@@ -146,25 +170,90 @@
             if(tab === 'chat') {
                 chatSec.classList.remove('hidden'); chatSec.classList.add('flex');
                 dashSec.classList.add('hidden');
-                mChat.classList.add('active-menu'); mDash.classList.remove('active-menu');
+                mChat.classList.add('bg-blue-50', 'border-blue-200'); 
+                mDash.classList.remove('active-menu');
             } else {
                 dashSec.classList.remove('hidden');
                 chatSec.classList.add('hidden');
-                mDash.classList.add('active-menu'); mChat.classList.remove('active-menu');
-                initChart(); // Re-render chart
+                mDash.classList.add('active-menu'); 
+                mChat.classList.remove('bg-blue-50', 'border-blue-200');
+                initChart(); // Render grafik saat tab dashboard dibuka
+            }
+        }
+
+        function chatBaru() {
+            switchTab('chat');
+            currentSessionId = null; // Reset ID Sesi untuk obrolan baru
+            
+            chatBox.innerHTML = `
+                <div class="flex items-start gap-4 fade-in max-w-3xl mb-6">
+                    <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
+                    <div class="bg-slate-50 border border-slate-100 text-slate-700 p-5 rounded-2xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
+                        Sesi obrolan baru dimulai. Ada yang bisa saya bantu terkait dokumen JDIH Kemnaker hari ini?
+                    </div>
+                </div>
+            `;
+        }
+
+        // FUNGSI BUAT NARIK HISTORY DARI DATABASE
+        async function bukaHistory(sessionId) {
+            switchTab('chat');
+            currentSessionId = sessionId; // Set ID sesi yang dipilih
+            
+            chatBox.innerHTML = `<div class="text-center text-slate-400 mt-10 animate-pulse">Memuat riwayat obrolan...</div>`;
+
+            try {
+                const response = await fetch(`/api/history/${sessionId}/`);
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    chatBox.innerHTML = ''; // Kosongkan chatbox
+                    
+                    // Render ulang pesan-pesan lama dari database
+                    data.messages.forEach(msg => {
+                        if (msg.role === 'user') {
+                            chatBox.innerHTML += `
+                                <div class="flex justify-end fade-in w-full mb-6">
+                                    <div class="bg-slate-800 text-white p-5 rounded-3xl rounded-tr-none shadow-md max-w-[75%] text-[15px]">
+                                        ${msg.content}
+                                    </div>
+                                </div>`;
+                        } else {
+                            chatBox.innerHTML += `
+                                <div class="flex items-start gap-4 fade-in max-w-4xl mb-6">
+                                    <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
+                                    <div class="flex flex-col gap-2 max-w-[85%]">
+                                        <div class="bg-white border border-slate-200 text-slate-700 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
+                                            ${msg.content.replace(/\n/g, '<br>')}
+                                        </div>
+                                        <div class="flex items-center gap-2 px-2">
+                                            <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Akurasi Konteks:</span>
+                                            <div class="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                <div class="h-full bg-blue-500" style="width: ${msg.skor * 100}%"></div>
+                                            </div>
+                                            <span class="text-[10px] font-bold text-slate-400">${(msg.skor * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </div>
+                                </div>`;
+                        }
+                    });
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            } catch (e) {
+                chatBox.innerHTML = `<div class="text-center text-red-400 mt-10">Gagal memuat riwayat obrolan.</div>`;
             }
         }
 
         function handleEnter(e) { if (e.key === 'Enter') kirimPesan(); }
 
-        // Fungsi Chat
+        // FUNGSI CHAT UTAMA
         async function kirimPesan() {
             const pesan = userInput.value.trim();
             if (!pesan) return;
 
-            // Render User Message (Full Screen style)
+            // 1. Tampilkan pesan user di layar
             chatBox.innerHTML += `
-                <div class="flex justify-end fade-in w-full">
+                <div class="flex justify-end fade-in w-full mb-6">
                     <div class="bg-slate-800 text-white p-5 rounded-3xl rounded-tr-none shadow-md max-w-[75%] text-[15px]">
                         ${pesan}
                     </div>
@@ -173,25 +262,37 @@
             userInput.value = '';
             chatBox.scrollTop = chatBox.scrollHeight;
 
-            // Loading
+            // 2. Tampilkan indikator loading AI
             const loadingId = 'load-' + Date.now();
             chatBox.innerHTML += `
-                <div id="${loadingId}" class="flex items-center gap-3 text-slate-400 animate-pulse italic text-sm">
+                <div id="${loadingId}" class="flex items-center gap-3 text-slate-400 animate-pulse italic text-sm mb-6">
                     <div class="w-2 h-2 bg-blue-400 rounded-full"></div> AI sedang menganalisis dokumen...
                 </div>`;
 
+            // 3. Kirim ke Backend Django
             try {
                 const response = await fetch('/api/chat/', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.getElementById('csrf_token').value },
-                    body: JSON.stringify({ pesan: pesan })
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'X-CSRFToken': document.getElementById('csrf_token').value 
+                    },
+                    // Kirim pesan DAN session_id ke backend
+                    body: JSON.stringify({ pesan: pesan, session_id: currentSessionId }) 
                 });
                 const data = await response.json();
+                
+                // Hapus loading
                 document.getElementById(loadingId).remove();
 
-                // Render Bot Message dengan info Akurasi
+                // Simpan ID Sesi dari backend (penting biar obrolan nyambung)
+                if (data.session_id) {
+                    currentSessionId = data.session_id;
+                }
+
+                // 4. Tampilkan jawaban AI
                 chatBox.innerHTML += `
-                    <div class="flex items-start gap-4 fade-in max-w-4xl">
+                    <div class="flex items-start gap-4 fade-in max-w-4xl mb-6">
                         <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
                         <div class="flex flex-col gap-2 max-w-[85%]">
                             <div class="bg-white border border-slate-200 text-slate-700 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
@@ -206,25 +307,36 @@
                             </div>
                         </div>
                     </div>`;
+                
+                // Refresh halaman otomatis kalau ini chat pertama, biar judul riwayat muncul di sidebar
+                if (chatBox.querySelectorAll('.flex.justify-end').length === 1) {
+                    setTimeout(() => location.reload(), 2000); 
+                }
+
             } catch (e) {
-                document.getElementById(loadingId).innerText = "Error koneksi server.";
+                if (document.getElementById(loadingId)) {
+                    document.getElementById(loadingId).innerText = "Error koneksi server. Pastikan Django sedang berjalan.";
+                }
             }
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // Setup Chart.js
+        // Setup Chart.js (Dummy Data Sementara)
         function initChart() {
             const ctx = document.getElementById('accuracyChart').getContext('2d');
-            // Menghindari duplikasi chart saat pindah tab
             if (window.myChart) window.myChart.destroy();
             
+            // Variabel Django dipanggil aman dengan dummy fallback
+            const labelGrafik = {{ label_grafik|safe|default:"['Sesi 1', 'Sesi 2', 'Sesi 3']" }};
+            const dataGrafik = {{ data_grafik|safe|default:"[0.85, 0.92, 0.88]" }};
+
             window.myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: {{ label_grafik|safe }},
+                    labels: labelGrafik,
                     datasets: [{
                         label: 'Skor Akurasi',
-                        data: {{ data_grafik|safe }},
+                        data: dataGrafik,
                         borderColor: '#2563eb',
                         backgroundColor: 'rgba(37, 99, 235, 0.1)',
                         borderWidth: 4,
