@@ -54,8 +54,12 @@ def tanya_bot_k3(pertanyaan):
     Tugasmu HANYA menjawab berdasarkan DOKUMEN K3 di bawah.
     
     ATURAN:
-    1. Jika jawaban TIDAK ADA di teks, jawab: "Maaf, informasi tidak ditemukan."
+    1. Jika jawaban TIDAK ADA di teks, jawab: "Maaf, informasi tidak ditemukan." atau dapat dikembangkan lagi dengan kalimat serupa yang menyatakan ketidaktahuan. JANGAN buat jawaban sendiri.
+    2. Atau jika jawaban tidak ditemuka berikan referensi dokumen yang paling relevan dengan pertanyaan
     2. JANGAN pakai pengetahuan luar.
+    3. Pakai bahasa Indonesia yang formal.
+    4. Jika pertanyaan ada pada jawaban sertakan sumber nama file dokumennya juga
+    
     
     --- RIWAYAT ---
     {teks_history}
