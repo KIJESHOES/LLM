@@ -43,10 +43,15 @@
             
             <div class="flex-1 overflow-y-auto space-y-1 pr-1 chat-scroll" id="history-list">
                 {% for sesi in riwayat_sesi %}
-                <button onclick="bukaHistory('{{ sesi.id }}')" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-all text-left group">
-                    <span class="text-lg opacity-50 group-hover:opacity-70">💬</span> 
-                    <span class="truncate">{{ sesi.judul }}</span>
-                </button>
+                <div class="relative flex items-center w-full group">
+                    <button onclick="bukaHistory('{{ sesi.id }}')" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-all text-left pr-10">
+                        <span class="text-lg opacity-50">💬</span> 
+                        <span class="truncate">{{ sesi.judul }}</span>
+                    </button>
+                    <button onclick="hapusHistory('{{ sesi.id }}', event)" class="absolute right-2 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-100 rounded opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-10" title="Hapus Obrolan">
+                        🗑️
+                    </button>
+                </div>
                 {% empty %}
                 <div class="text-xs text-center text-slate-400 mt-4">Belum ada riwayat</div>
                 {% endfor %}
@@ -357,6 +362,33 @@
                     plugins: { legend: { display: false } }
                 }
             });
+        }
+
+        // FUNGSI HAPUS HISTORY
+        async function hapusHistory(sessionId, event) {
+            // Mencegah chat terbuka saat tombol hapus diklik
+            event.stopPropagation();
+
+            if (confirm("Yakin mau hapus riwayat chat ini?")) {
+                try {
+                    const response = await fetch(`/api/hapus/${sessionId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': document.getElementById('csrf_token').value 
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        location.reload(); // Refresh layar biar chatnya hilang
+                    } else {
+                        alert("Gagal menghapus riwayat!");
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert("Terjadi kesalahan sistem saat menghapus.");
+                }
+            }
         }
     </script>
 </body>
