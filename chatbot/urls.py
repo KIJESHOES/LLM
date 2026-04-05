@@ -10,4 +10,7 @@ urlpatterns = [
     
     # API buat narik riwayat chat
     path('api/history/<str:session_id>/', views.get_history, name='get_history'),
+    
+    # Tambahin baris ini di dalem list urlpatterns lu ya:
+    path('api/hapus/<str:session_id>/', views.hapus_sesi, name='hapus_sesi'),
 ]

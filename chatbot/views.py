@@ -51,6 +51,16 @@ def api_chat(request):
             'session_id': str(sesi.id), # Balikin ID sesi biar frontend tau
             'judul': sesi.judul
         })
+        
+def hapus_sesi(request, session_id):
+    if request.method == 'POST' or request.method == 'DELETE':
+        try:
+            # Cari sesi berdasarkan ID, terus hapus
+            sesi = ChatSession.objects.get(id=session_id)
+            sesi.delete()
+            return JsonResponse({'status': 'success'})
+        except ChatSession.DoesNotExist:
+            return JsonResponse({'status': 'error', 'pesan': 'Sesi tidak ditemukan'}, status=404)
 
 # API khusus buat ngambil riwayat pas tombol history diklik
 def get_history(request, session_id):
