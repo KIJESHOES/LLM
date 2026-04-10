@@ -11,7 +11,7 @@ def halaman_utama(request):
     context = {
         'riwayat_sesi': semua_sesi
     }
-    return render(request, 'chat.html', context)
+    return render(request, 'index.html', context)
 
 @csrf_exempt
 def api_chat(request):
