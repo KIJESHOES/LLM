@@ -12,7 +12,7 @@ const themeIcon = document.getElementById('theme-icon');
 // Cek memori lokal pas web dibuka, kemaren milih gelap apa terang?
 if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
     htmlRoot.classList.add('dark');
-    themeIcon.innerText = '☀️'; // ganti icon matahari
+    themeIcon.innerText = '☀️'; 
 } else {
     htmlRoot.classList.remove('dark');
     themeIcon.innerText = '🌙';
@@ -29,6 +29,7 @@ function toggleDarkMode() {
         themeIcon.innerText = '☀️';
     }
 }
+
 // VARIABEL PENTING BUAT DATABASE
 let currentSessionId = null;
 
@@ -65,25 +66,7 @@ function switchTab(tab) {
 function chatBaru() {
     switchTab('chat');
     currentSessionId = null; // Reset ID Sesi untuk obrolan baru
-    
-    // 4. Tampilkan jawaban AI
-        chatBox.innerHTML += `
-            <div class="flex items-start gap-4 fade-in max-w-4xl mb-6">
-                <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
-                <div class="flex flex-col gap-2 max-w-[85%]">
-                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
-                        ${data.jawaban.replace(/\n/g, '<br>')}
-                    </div>
-                    
-                    <div class="flex items-center gap-2 px-2 mt-1">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Waktu Proses:</span>
-                        <div class="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-md">
-                            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-300">⏱️ ${data.waktu} Detik</span>
-                        </div>
-                    </div>
-                    
-                </div>
-            </div>`;
+    chatBox.innerHTML = ''; // Kosongkan layar chat
 }
 
 // FUNGSI BUAT NARIK HISTORY DARI DATABASE
@@ -110,6 +93,7 @@ async function bukaHistory(sessionId) {
                             </div>
                         </div>`;
                 } else {
+                    // TAMPILAN AI (ADA AKURASI & WAKTU)
                     chatBox.innerHTML += `
                         <div class="flex items-start gap-4 fade-in max-w-4xl mb-6">
                             <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
@@ -117,13 +101,23 @@ async function bukaHistory(sessionId) {
                                 <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
                                     ${msg.content.replace(/\n/g, '<br>')}
                                 </div>
-                                <div class="flex items-center gap-2 px-2">
-                                    <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Akurasi Konteks:</span>
-                                    <div class="w-32 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                        <div class="h-full bg-blue-500" style="width: ${msg.skor * 100}%"></div>
+                                
+                                <div class="flex flex-wrap items-center gap-4 px-2 mt-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Akurasi:</span>
+                                        <div class="w-24 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                            <div class="h-full bg-blue-500" style="width: ${msg.skor * 100}%"></div>
+                                        </div>
+                                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">${(msg.skor * 100).toFixed(0)}%</span>
                                     </div>
-                                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">${(msg.skor * 100).toFixed(0)}%</span>
+                                    <div class="flex items-center gap-2 border-l border-slate-300 dark:border-slate-600 pl-4">
+                                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Waktu:</span>
+                                        <div class="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-md">
+                                            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-300">⏱️ ${msg.waktu || 0} Detik</span>
+                                        </div>
+                                    </div>
                                 </div>
+
                             </div>
                         </div>`;
                 }
@@ -170,7 +164,6 @@ async function kirimPesan() {
                 'Content-Type': 'application/json', 
                 'X-CSRFToken': tokenCSRF 
             },
-            // Kirim pesan DAN session_id ke backend
             body: JSON.stringify({ pesan: pesan, session_id: currentSessionId }) 
         });
         const data = await response.json();
@@ -180,12 +173,11 @@ async function kirimPesan() {
             document.getElementById(loadingId).remove();
         }
 
-        // Simpan ID Sesi dari backend (penting biar obrolan nyambung)
         if (data.session_id) {
             currentSessionId = data.session_id;
         }
 
-        // 4. Tampilkan jawaban AI
+        // 4. TAMPILAN AI (ADA AKURASI & WAKTU)
         chatBox.innerHTML += `
             <div class="flex items-start gap-4 fade-in max-w-4xl mb-6">
                 <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
@@ -193,17 +185,27 @@ async function kirimPesan() {
                     <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
                         ${data.jawaban.replace(/\n/g, '<br>')}
                     </div>
-                    <div class="flex items-center gap-2 px-2">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Akurasi Konteks:</span>
-                        <div class="w-32 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-blue-500" style="width: ${data.skor * 100}%"></div>
+                    
+                    <div class="flex flex-wrap items-center gap-4 px-2 mt-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Akurasi:</span>
+                            <div class="w-24 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-blue-500" style="width: ${data.skor * 100}%"></div>
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">${(data.skor * 100).toFixed(0)}%</span>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">${(data.skor * 100).toFixed(0)}%</span>
+                        <div class="flex items-center gap-2 border-l border-slate-300 dark:border-slate-600 pl-4">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Waktu:</span>
+                            <div class="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-md">
+                                <span class="text-[11px] font-bold text-slate-500 dark:text-slate-300">⏱️ ${data.waktu || 0} Detik</span>
+                            </div>
+                        </div>
                     </div>
+
                 </div>
             </div>`;
         
-        // Refresh halaman otomatis kalau ini chat pertama, biar judul riwayat muncul di sidebar
+        // Refresh halaman otomatis kalau ini chat pertama
         if (chatBox.querySelectorAll('.flex.justify-end').length === 1) {
             setTimeout(() => location.reload(), 2000); 
         }
@@ -221,13 +223,10 @@ function initChart() {
     const ctx = document.getElementById('accuracyChart').getContext('2d');
     if (window.myChart) window.myChart.destroy();
     
-    // Ambil data dari variabel global (jembatan dari HTML)
     const labelGrafik = window.DJANGO_DATA ? window.DJANGO_DATA.labelGrafik : ['Sesi 1', 'Sesi 2', 'Sesi 3'];
     const dataGrafik = window.DJANGO_DATA ? window.DJANGO_DATA.dataGrafik : [0.85, 0.92, 0.88];
-
-    // Deteksi tema buat warna teks di chart
     const isDark = document.getElementById('html-root').classList.contains('dark');
-    const textColor = isDark ? '#94a3b8' : '#64748b'; // slate-400 / slate-500
+    const textColor = isDark ? '#94a3b8' : '#64748b'; 
 
     window.myChart = new Chart(ctx, {
         type: 'line',
@@ -236,7 +235,7 @@ function initChart() {
             datasets: [{
                 label: 'Skor Akurasi',
                 data: dataGrafik,
-                borderColor: '#3b82f6', // blue-500
+                borderColor: '#3b82f6', 
                 backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(37, 99, 235, 0.1)',
                 borderWidth: 4,
                 tension: 0.4,
@@ -268,23 +267,18 @@ function initChart() {
 
 // FUNGSI HAPUS HISTORY
 async function hapusHistory(sessionId, event) {
-    // Mencegah chat terbuka saat tombol hapus diklik
     event.stopPropagation();
-
     if (confirm("Yakin mau hapus riwayat chat ini?")) {
         try {
             const tokenCSRF = document.getElementById('csrf_token') ? document.getElementById('csrf_token').value : '';
-            
             const response = await fetch(`/api/hapus/${sessionId}/`, {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': tokenCSRF 
-                }
+                headers: { 'X-CSRFToken': tokenCSRF }
             });
             const data = await response.json();
             
             if (data.status === 'success') {
-                location.reload(); // Refresh layar biar chatnya hilang
+                location.reload(); 
             } else {
                 alert("Gagal menghapus riwayat!");
             }
