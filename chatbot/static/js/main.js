@@ -66,14 +66,24 @@ function chatBaru() {
     switchTab('chat');
     currentSessionId = null; // Reset ID Sesi untuk obrolan baru
     
-    chatBox.innerHTML = `
-        <div class="flex items-start gap-4 fade-in max-w-4xl mb-6">
-            <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
-            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
-                Sesi obrolan baru dimulai. Ada yang bisa saya bantu terkait dokumen JDIH Kemnaker hari ini?
-            </div>
-        </div>
-    `;
+    // 4. Tampilkan jawaban AI
+        chatBox.innerHTML += `
+            <div class="flex items-start gap-4 fade-in max-w-4xl mb-6">
+                <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
+                <div class="flex flex-col gap-2 max-w-[85%]">
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
+                        ${data.jawaban.replace(/\n/g, '<br>')}
+                    </div>
+                    
+                    <div class="flex items-center gap-2 px-2 mt-1">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Waktu Proses:</span>
+                        <div class="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-md">
+                            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-300">⏱️ ${data.waktu} Detik</span>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>`;
 }
 
 // FUNGSI BUAT NARIK HISTORY DARI DATABASE

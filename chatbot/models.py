@@ -34,6 +34,7 @@ class ChatMessage(models.Model):
     session = models.ForeignKey(ChatSession, related_name='messages', on_delete=models.CASCADE)
     role = models.CharField(max_length=10) # isinya nanti 'user' atau 'ai'
     content = models.TextField() # Isi teks chat-nya
+    waktu_proses = models.FloatField(default=0.0)
     skor_akurasi = models.FloatField(null=True, blank=True) # Cuma diisi kalau role == 'ai'
     created_at = models.DateTimeField(auto_now_add=True)
 
