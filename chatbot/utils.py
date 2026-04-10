@@ -30,7 +30,7 @@ def ingest_pdf_ke_vektor():
     print("SELESAI! Database bener-bener fresh sekarang.")
 
 # --- 2. FUNGSI UTAMA TANYA JAWAB (YG DIPANGGIL VIEWS) ---
-def tanya_bot_k3(pertanyaan):
+def tanya_bot_k3(pertanyaan, panjang_jawaban="sedang"):
     global riwayat_chat
     path_db = "db_vektor/"
     
@@ -45,9 +45,31 @@ def tanya_bot_k3(pertanyaan):
     dokumen_ketemu = vektor_db.similarity_search(pertanyaan, k=20)
     teks_konteks = "\n\n".join([doc.page_content for doc in dokumen_ketemu])
     
+    # --- BARU: AMBIL METADATA (FILE & HALAMAN) ---
+    sumber_file = ""
+    halaman = 1
+    
+    if len(dokumen_ketemu) > 0:
+        # Ambil metadata dari dokumen yang paling relevan (ranking 1 / index 0)
+        sumber_asli = dokumen_ketemu[0].metadata.get('source', '')
+        
+        # PyPDFLoader index halamannya mulai dari 0, jadi kita +1 biar pas sama PDF aslinya
+        halaman = dokumen_ketemu[0].metadata.get('page', 0) + 1 
+        
+        # Bersihkan path, ambil nama filenya aja (misal: dari "data_pdf/UU_No_1.pdf" jadi "UU_No_1.pdf")
+        sumber_file = os.path.basename(sumber_asli)
+
     teks_history = ""
     for obrolan in riwayat_chat:
         teks_history += f"USER: {obrolan['user']}\nAI: {obrolan['ai']}\n\n"
+
+    # --- LOGIKA INSTRUKSI PANJANG JAWABAN ---
+    if panjang_jawaban == "pendek":
+        instruksi_panjang = "Jawablah dengan SANGAT SINGKAT, PADAT, dan LANGSUNG pada intinya (maksimal 1-2 paragraf pendek)."
+    elif panjang_jawaban == "panjang":
+        instruksi_panjang = "Jawablah dengan SANGAT DETAIL, KOMPREHENSIF, dan jelaskan poin-poinnya secara mendalam."
+    else:
+        instruksi_panjang = "Jawablah dengan panjang SEDANG, cukup informatif namun tidak bertele-tele."
 
     prompt_ke_ai = f"""
     Kamu adalah asisten sistem K3 yang JUJUR dan KAKU. 
@@ -58,7 +80,7 @@ def tanya_bot_k3(pertanyaan):
     2. If the answer is NOT found in the text, you must say: "Maaf, informasi tidak ditemukan." You may add a suggestion for relevant documents if applicable. DO NOT make up your own answer.
     3. DO NOT use outside knowledge. Rely ONLY on the provided document.
     4. If the answer is found, you MUST include the source document file name in your response.
-    
+    5. {instruksi_panjang}
     
     --- RIWAYAT ---
     {teks_history}
@@ -79,4 +101,5 @@ def tanya_bot_k3(pertanyaan):
     # Ingat untuk mengganti ini dengan perhitungan skor sebenarnya nanti.
     skor_ai = 0.99
         
-    return jawaban_ai, skor_ai
+    # --- BARU: Return sumber_file dan halaman juga ke views.py ---
+    return jawaban_ai, skor_ai, sumber_file, halaman

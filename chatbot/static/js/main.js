@@ -97,8 +97,8 @@ async function bukaHistory(sessionId) {
                     chatBox.innerHTML += `
                         <div class="flex items-start gap-4 fade-in max-w-4xl mb-6">
                             <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
-                            <div class="flex flex-col gap-2 max-w-[85%]">
-                                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
+                            <div class="flex flex-col gap-2 max-w-[85%] w-full">
+                                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed w-full">
                                     ${msg.content.replace(/\n/g, '<br>')}
                                 </div>
                                 
@@ -117,7 +117,6 @@ async function bukaHistory(sessionId) {
                                         </div>
                                     </div>
                                 </div>
-
                             </div>
                         </div>`;
                 }
@@ -135,6 +134,9 @@ function handleEnter(e) { if (e.key === 'Enter') kirimPesan(); }
 async function kirimPesan() {
     const pesan = userInput.value.trim();
     if (!pesan) return;
+
+    // AMBIL NILAI DARI DROPDOWN PANJANG JAWABAN
+    const panjangJawaban = document.getElementById('response-length') ? document.getElementById('response-length').value : 'sedang';
 
     // 1. Tampilkan pesan user di layar
     chatBox.innerHTML += `
@@ -164,7 +166,11 @@ async function kirimPesan() {
                 'Content-Type': 'application/json', 
                 'X-CSRFToken': tokenCSRF 
             },
-            body: JSON.stringify({ pesan: pesan, session_id: currentSessionId }) 
+            body: JSON.stringify({ 
+                pesan: pesan, 
+                session_id: currentSessionId,
+                panjang_jawaban: panjangJawaban
+            }) 
         });
         const data = await response.json();
         
@@ -177,13 +183,42 @@ async function kirimPesan() {
             currentSessionId = data.session_id;
         }
 
-        // 4. TAMPILAN AI (ADA AKURASI & WAKTU)
+        // --- BARU: LOGIKA PREVIEW PDF ---
+        let pdfPreviewHtml = "";
+        // Pastikan sumber file tidak kosong (AI berhasil nemu referensi)
+        if (data.sumber_file && data.sumber_file !== "") {
+            // Sesuaikan path ini dengan folder static lu (contoh: /static/data_pdf/)
+            let pdfUrl = `/static/data_pdf/${data.sumber_file}#page=${data.halaman}`;
+            
+            pdfPreviewHtml = `
+                <div class="mt-5 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800/50">
+                    <div class="px-4 py-3 bg-slate-100 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">📄</span>
+                            <span class="text-[13px] font-bold text-slate-700 dark:text-slate-200">
+                                Referensi: ${data.sumber_file} <span class="text-blue-500">(Hal. ${data.halaman})</span>
+                            </span>
+                        </div>
+                        <a href="${pdfUrl}" target="_blank" class="text-[12px] text-blue-600 hover:text-blue-800 dark:text-blue-400 font-bold transition-colors bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-600">Buka Penuh ↗</a>
+                    </div>
+                    <iframe src="${pdfUrl}" class="w-full h-[400px] border-none" title="Preview PDF"></iframe>
+                </div>
+            `;
+        }
+
+        // 4. TAMPILAN AI (TEKS + PDF PREVIEW + AKURASI & WAKTU)
         chatBox.innerHTML += `
-            <div class="flex items-start gap-4 fade-in max-w-4xl mb-6">
+            <div class="flex items-start gap-4 fade-in max-w-4xl mb-6 w-full">
                 <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
-                <div class="flex flex-col gap-2 max-w-[85%]">
-                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed">
-                        ${data.jawaban.replace(/\n/g, '<br>')}
+                <div class="flex flex-col gap-2 max-w-[85%] w-full">
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed w-full">
+                        
+                        <div class="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-200">
+                            ${data.jawaban.replace(/\n/g, '<br>')}
+                        </div>
+                        
+                        ${pdfPreviewHtml}
+
                     </div>
                     
                     <div class="flex flex-wrap items-center gap-4 px-2 mt-1">
@@ -201,7 +236,6 @@ async function kirimPesan() {
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>`;
         
