@@ -12,21 +12,21 @@ const themeIcon = document.getElementById('theme-icon');
 // Cek memori lokal pas web dibuka, kemaren milih gelap apa terang?
 if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
     htmlRoot.classList.add('dark');
-    themeIcon.innerText = '☀️'; 
+    if (themeIcon) themeIcon.innerText = '☀️'; 
 } else {
     htmlRoot.classList.remove('dark');
-    themeIcon.innerText = '🌙';
+    if (themeIcon) themeIcon.innerText = '🌙';
 }
 
 function toggleDarkMode() {
     if (htmlRoot.classList.contains('dark')) {
         htmlRoot.classList.remove('dark');
         localStorage.setItem('theme', 'light');
-        themeIcon.innerText = '🌙';
+        if (themeIcon) themeIcon.innerText = '🌙';
     } else {
         htmlRoot.classList.add('dark');
         localStorage.setItem('theme', 'dark');
-        themeIcon.innerText = '☀️';
+        if (themeIcon) themeIcon.innerText = '☀️';
     }
 }
 
@@ -35,13 +35,17 @@ let currentSessionId = null;
 
 // Navigasi UI
 function bukaSistem() {
-    landingPage.classList.add('opacity-0', 'pointer-events-none');
+    if (landingPage) landingPage.classList.add('opacity-0', 'pointer-events-none');
     setTimeout(() => {
-        landingPage.style.display = 'none';
-        sidebar.classList.remove('hidden');
-        sidebar.classList.add('flex');
-        chatSec.classList.remove('hidden');
-        chatSec.classList.add('flex');
+        if (landingPage) landingPage.style.display = 'none';
+        if (sidebar) {
+            sidebar.classList.remove('hidden');
+            sidebar.classList.add('flex');
+        }
+        if (chatSec) {
+            chatSec.classList.remove('hidden');
+            chatSec.classList.add('flex');
+        }
     }, 500);
 }
 
@@ -50,15 +54,15 @@ function switchTab(tab) {
     const mDash = document.getElementById('menu-dashboard');
     
     if(tab === 'chat') {
-        chatSec.classList.remove('hidden'); chatSec.classList.add('flex');
-        dashSec.classList.add('hidden');
-        mChat.classList.add('bg-blue-50', 'border-blue-200', 'dark:bg-blue-900/30', 'dark:border-blue-800'); 
-        mDash.classList.remove('active-menu');
+        if (chatSec) { chatSec.classList.remove('hidden'); chatSec.classList.add('flex'); }
+        if (dashSec) dashSec.classList.add('hidden');
+        if (mChat) mChat.classList.add('bg-blue-50', 'border-blue-200', 'dark:bg-blue-900/30', 'dark:border-blue-800'); 
+        if (mDash) mDash.classList.remove('active-menu');
     } else {
-        dashSec.classList.remove('hidden');
-        chatSec.classList.add('hidden');
-        mDash.classList.add('active-menu'); 
-        mChat.classList.remove('bg-blue-50', 'border-blue-200', 'dark:bg-blue-900/30', 'dark:border-blue-800');
+        if (dashSec) { dashSec.classList.remove('hidden'); dashSec.classList.add('block'); } // atau flex tergantung desain lu
+        if (chatSec) chatSec.classList.add('hidden');
+        if (mDash) mDash.classList.add('active-menu'); 
+        if (mChat) mChat.classList.remove('bg-blue-50', 'border-blue-200', 'dark:bg-blue-900/30', 'dark:border-blue-800');
         initChart(); // Render grafik saat tab dashboard dibuka
     }
 }
@@ -66,13 +70,15 @@ function switchTab(tab) {
 function chatBaru() {
     switchTab('chat');
     currentSessionId = null; // Reset ID Sesi untuk obrolan baru
-    chatBox.innerHTML = ''; // Kosongkan layar chat
+    if (chatBox) chatBox.innerHTML = ''; // Kosongkan layar chat
 }
 
 // FUNGSI BUAT NARIK HISTORY DARI DATABASE
 async function bukaHistory(sessionId) {
     switchTab('chat');
     currentSessionId = sessionId; // Set ID sesi yang dipilih
+    
+    if (!chatBox) return; // Jaga-jaga kalau chatBox ga ketemu
     
     chatBox.innerHTML = `<div class="text-center text-slate-400 dark:text-slate-500 mt-10 animate-pulse">Memuat riwayat obrolan...</div>`;
 
@@ -106,9 +112,9 @@ async function bukaHistory(sessionId) {
                                     <div class="flex items-center gap-2">
                                         <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Akurasi:</span>
                                         <div class="w-24 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                            <div class="h-full bg-blue-500" style="width: ${msg.skor * 100}%"></div>
+                                            <div class="h-full bg-blue-500" style="width: ${(msg.skor || 0) * 100}%"></div>
                                         </div>
-                                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">${(msg.skor * 100).toFixed(0)}%</span>
+                                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">${((msg.skor || 0) * 100).toFixed(0)}%</span>
                                     </div>
                                     <div class="flex items-center gap-2 border-l border-slate-300 dark:border-slate-600 pl-4">
                                         <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Waktu:</span>
@@ -122,9 +128,12 @@ async function bukaHistory(sessionId) {
                 }
             });
             chatBox.scrollTop = chatBox.scrollHeight;
+        } else {
+            chatBox.innerHTML = `<div class="text-center text-red-400 mt-10">Data riwayat kosong atau tidak ditemukan.</div>`;
         }
     } catch (e) {
-        chatBox.innerHTML = `<div class="text-center text-red-400 mt-10">Gagal memuat riwayat obrolan.</div>`;
+        console.error("Gagal load history:", e);
+        chatBox.innerHTML = `<div class="text-center text-red-400 mt-10">Gagal memuat riwayat obrolan. Cek koneksi server.</div>`;
     }
 }
 
@@ -132,11 +141,12 @@ function handleEnter(e) { if (e.key === 'Enter') kirimPesan(); }
 
 // FUNGSI CHAT UTAMA
 async function kirimPesan() {
+    if (!userInput) return;
     const pesan = userInput.value.trim();
     if (!pesan) return;
 
-    // AMBIL NILAI DARI DROPDOWN PANJANG JAWABAN
-    const panjangJawaban = document.getElementById('response-length') ? document.getElementById('response-length').value : 'sedang';
+    // UDAH DIPERBAIKI: Nyari ID 'panjang-jawaban' sesuai HTML baru lu
+    const panjangJawaban = document.getElementById('panjang-jawaban') ? document.getElementById('panjang-jawaban').value : 'sedang';
 
     // 1. Tampilkan pesan user di layar
     chatBox.innerHTML += `
@@ -183,11 +193,9 @@ async function kirimPesan() {
             currentSessionId = data.session_id;
         }
 
-        // --- BARU: LOGIKA PREVIEW PDF ---
+        // --- PREVIEW PDF ---
         let pdfPreviewHtml = "";
-        // Pastikan sumber file tidak kosong (AI berhasil nemu referensi)
         if (data.sumber_file && data.sumber_file !== "") {
-            // Sesuaikan path ini dengan folder static lu (contoh: /static/data_pdf/)
             let pdfUrl = `/static/data_pdf/${data.sumber_file}#page=${data.halaman}`;
             
             pdfPreviewHtml = `
@@ -206,7 +214,7 @@ async function kirimPesan() {
             `;
         }
 
-        // 4. TAMPILAN AI (TEKS + PDF PREVIEW + AKURASI & WAKTU)
+        // 4. TAMPILAN AI 
         chatBox.innerHTML += `
             <div class="flex items-start gap-4 fade-in max-w-4xl mb-6 w-full">
                 <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
@@ -225,9 +233,9 @@ async function kirimPesan() {
                         <div class="flex items-center gap-2">
                             <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Akurasi:</span>
                             <div class="w-24 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                <div class="h-full bg-blue-500" style="width: ${data.skor * 100}%"></div>
+                                <div class="h-full bg-blue-500" style="width: ${(data.skor || 0) * 100}%"></div>
                             </div>
-                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">${(data.skor * 100).toFixed(0)}%</span>
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">${((data.skor || 0) * 100).toFixed(0)}%</span>
                         </div>
                         <div class="flex items-center gap-2 border-l border-slate-300 dark:border-slate-600 pl-4">
                             <span class="text-[10px] font-black uppercase tracking-widest text-blue-500">Waktu:</span>
@@ -239,12 +247,13 @@ async function kirimPesan() {
                 </div>
             </div>`;
         
-        // Refresh halaman otomatis kalau ini chat pertama
+        // Refresh halaman otomatis kalau ini chat pertama (Biar masuk ke list history)
         if (chatBox.querySelectorAll('.flex.justify-end').length === 1) {
             setTimeout(() => location.reload(), 2000); 
         }
 
     } catch (e) {
+        console.error("Gagal kirim pesan:", e);
         if (document.getElementById(loadingId)) {
             document.getElementById(loadingId).innerText = "Error koneksi server. Pastikan Django sedang berjalan.";
         }
@@ -254,12 +263,15 @@ async function kirimPesan() {
 
 // Setup Chart.js
 function initChart() {
-    const ctx = document.getElementById('accuracyChart').getContext('2d');
+    const canvasElement = document.getElementById('accuracyChart');
+    if (!canvasElement) return; // Jangan paksa render kalau ga ada canvas-nya
+
+    const ctx = canvasElement.getContext('2d');
     if (window.myChart) window.myChart.destroy();
     
     const labelGrafik = window.DJANGO_DATA ? window.DJANGO_DATA.labelGrafik : ['Sesi 1', 'Sesi 2', 'Sesi 3'];
     const dataGrafik = window.DJANGO_DATA ? window.DJANGO_DATA.dataGrafik : [0.85, 0.92, 0.88];
-    const isDark = document.getElementById('html-root').classList.contains('dark');
+    const isDark = document.getElementById('html-root') && document.getElementById('html-root').classList.contains('dark');
     const textColor = isDark ? '#94a3b8' : '#64748b'; 
 
     window.myChart = new Chart(ctx, {

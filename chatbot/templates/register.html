@@ -11,30 +11,26 @@
         }
     </script>
     <style>
-        /* Styling khusus untuk merapikan struktur bawaan Django */
         .django-form p {
             margin-bottom: 1.25rem;
+            position: relative;
         }
         .django-form label {
             display: block;
             font-size: 0.875rem;
             font-weight: 600;
-            color: #334155; /* text-slate-700 */
+            color: #334155;
             margin-bottom: 0.5rem;
         }
         .dark .django-form label {
-            color: #cbd5e1; /* text-slate-300 */
+            color: #cbd5e1;
         }
+        
+        /* PENTING: Menghilangkan paksa teks syarat bawel dari Django */
         .django-form .helptext {
-            display: block;
-            font-size: 0.75rem;
-            color: #64748b; /* text-slate-500 */
-            margin-top: 0.5rem;
-            line-height: 1.4;
+            display: none !important; 
         }
-        .dark .django-form .helptext {
-            color: #94a3b8; /* text-slate-400 */
-        }
+
         .django-form ul.errorlist {
             margin-top: 0.25rem;
             margin-bottom: 0.5rem;
@@ -42,7 +38,7 @@
             list-style-type: disc;
         }
         .django-form ul.errorlist li {
-            color: #ef4444; /* text-red-500 */
+            color: #ef4444; 
             font-size: 0.875rem;
         }
     </style>
@@ -50,18 +46,15 @@
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 min-h-screen flex items-center justify-center p-6 transition-colors duration-300">
 
     <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 p-8 sm:p-10 relative overflow-hidden">
-        <div class="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl"></div>
 
         <div class="relative z-10 text-center mb-8">
-            <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm ring-4 ring-emerald-50 dark:ring-emerald-900/30">
-                ✨
-            </div>
             <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Buat Akun</h1>
-            <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm">Daftar sekarang untuk mengakses AI K3 PRO</p>
+            <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm">Daftar menggunakan Email Anda</p>
         </div>
 
-        <form method="POST" class="relative z-10 django-form">
+        <form method="POST" class="relative z-10 django-form" id="register-form">
             {% csrf_token %}
             
             {% if form.non_field_errors %}
@@ -73,14 +66,14 @@
             {{ form.as_p }}
 
             <button type="submit" 
-                class="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-500/30 transition-all transform hover:-translate-y-0.5 mt-4">
+                class="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 mt-4">
                 Daftar Sekarang
             </button>
         </form>
 
         <div class="mt-8 text-center relative z-10 space-y-3">
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                Sudah punya akun? <a href="/login/" class="font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline transition-colors">Login di sini</a>
+                Sudah punya akun? <a href="/login/" class="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-colors">Login di sini</a>
             </p>
             <div class="border-t border-slate-100 dark:border-slate-700/60 w-1/2 mx-auto mt-4 mb-2"></div>
             <p class="text-xs text-slate-500 dark:text-slate-500 mt-2">
@@ -91,15 +84,90 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // 1. UBAH TAMPILAN USERNAME MENJADI EMAIL
+            const usernameLabel = document.querySelector('label[for="id_username"]');
+            const usernameInput = document.getElementById('id_username');
+            
+            if (usernameLabel) {
+                usernameLabel.innerHTML = 'Email:';
+            }
+            if (usernameInput) {
+                usernameInput.type = 'email';
+                usernameInput.placeholder = 'contoh@email.com';
+            }
+
+            // 2. STYLING SEMUA INPUT FIELD
             const inputs = document.querySelectorAll(".django-form input");
             inputs.forEach(input => {
-                // Jangan ubah styling kalau inputnya tipe hidden atau checkbox/radio
                 if (input.type !== 'hidden' && input.type !== 'checkbox' && input.type !== 'radio') {
-                    input.className = "w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-800 dark:text-white transition-all outline-none mt-1";
+                    input.className = "w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800 dark:text-white transition-all outline-none mt-1";
                 }
             });
+
+            // 3. LOGIC HINT PASSWORD DINAMIS
+            const passInput = document.getElementById('id_password1');
+            
+            if (passInput) {
+                // Buat kotak hint
+                const hintBox = document.createElement('div');
+                hintBox.id = 'password-hint';
+                hintBox.className = 'hidden mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-xs border border-blue-100 dark:border-blue-800 transition-all';
+                hintBox.innerHTML = `
+                    <p class="font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Password harus memiliki:</p>
+                    <ul class="space-y-1">
+                        <li id="req-length" class="text-red-500 dark:text-red-400 flex items-center gap-1">❌ Minimal 8 karakter</li>
+                        <li id="req-upper" class="text-red-500 dark:text-red-400 flex items-center gap-1">❌ Minimal 1 huruf kapital</li>
+                        <li id="req-number" class="text-red-500 dark:text-red-400 flex items-center gap-1">❌ Minimal 1 angka</li>
+                        <li id="req-special" class="text-red-500 dark:text-red-400 flex items-center gap-1">❌ Minimal 1 simbol (.,!@# dll)</li>
+                    </ul>
+                `;
+                
+                // Masukkan hint di bawah input password
+                passInput.parentNode.insertBefore(hintBox, passInput.nextSibling);
+
+                // Fungsi update UI tiap kali ngetik
+                passInput.addEventListener('input', function() {
+                    const val = this.value;
+                    
+                    // Kalau input kosong, sembunyikan hint
+                    if (val.length === 0) {
+                        hintBox.classList.add('hidden');
+                        return;
+                    }
+                    
+                    // Munculkan hint saat mulai ngetik
+                    hintBox.classList.remove('hidden');
+
+                    // Cek Syarat
+                    const isLength = val.length >= 8;
+                    const isUpper = /[A-Z]/.test(val);
+                    const isNumber = /[0-9]/.test(val);
+                    const isSpecial = /[.,!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(val); // Deteksi titik, koma, dsb
+
+                    // Update Icon dan Warna
+                    updateReq('req-length', isLength, 'Minimal 8 karakter');
+                    updateReq('req-upper', isUpper, 'Minimal 1 huruf kapital');
+                    updateReq('req-number', isNumber, 'Minimal 1 angka');
+                    updateReq('req-special', isSpecial, 'Minimal 1 simbol (.,!@# dll)');
+
+                    // JIKA SEMUA SYARAT TERPENUHI -> HILANGKAN HINT
+                    if (isLength && isUpper && isNumber && isSpecial) {
+                        hintBox.classList.add('hidden');
+                    }
+                });
+
+                function updateReq(id, isMet, text) {
+                    const el = document.getElementById(id);
+                    if (isMet) {
+                        el.className = "text-green-600 dark:text-green-400 flex items-center gap-1";
+                        el.innerHTML = `✅ <span class="line-through opacity-70">${text}</span>`;
+                    } else {
+                        el.className = "text-red-500 dark:text-red-400 flex items-center gap-1";
+                        el.innerHTML = `❌ ${text}`;
+                    }
+                }
+            }
         });
     </script>
-
 </body>
 </html>

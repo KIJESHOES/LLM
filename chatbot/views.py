@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib import messages # <-- TAMBAHAN: Untuk nampilin notifikasi error
 import json
 import time 
 from .models import ChatSession, ChatMessage
@@ -41,7 +42,7 @@ def logout_view(request):
         return redirect('halaman_utama')
 
 # ==========================================
-# 2. FUNGSI UTAMA & CHAT
+# 2. FUNGSI UTAMA, CHAT & DASHBOARD
 # ==========================================
 def halaman_utama(request):
     # 1. Kalau BELUM LOGIN, lempar ke index.html biar index.html yang nampilin landing page
@@ -59,6 +60,28 @@ def halaman_utama(request):
     
     # 👇 BALIKIN KE SINI. Wajib pake index.html biar CSS Tailwind lu nyala lagi!
     return render(request, 'index.html', context)
+
+
+# 👇 TAMBAHAN BARU: FUNGSI KHUSUS ANALISIS AKURASI DENGAN PROTEKSI ADMIN
+@login_required(login_url='/login/')
+def analisis_akurasi_view(request):
+    # PROTEKSI: Cek apakah yang akses adalah admin/superuser
+    if not (request.user.is_staff or request.user.is_superuser):
+        # Kalau bukan admin, kasih pesan error dan tendang ke halaman utama
+        messages.error(request, "Akses ditolak! Halaman Analisis Akurasi khusus untuk Admin.")
+        return redirect('halaman_utama')
+    
+    # Kalau lolos (dia admin), siapkan data dashboard
+    semua_sesi = ChatSession.objects.filter(user=request.user).order_by('-updated_at')
+    context = {
+        'riwayat_sesi': semua_sesi,
+        'is_admin': True,
+        'tampilkan_dashboard': True # Variabel bantuan buat di index.html
+    }
+    
+    # Tetap render index.html sebagai kerangka utamanya
+    return render(request, 'index.html', context)
+
 
 @csrf_exempt
 @login_required(login_url='/login/')

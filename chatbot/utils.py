@@ -41,23 +41,34 @@ def tanya_bot_k3(pertanyaan, panjang_jawaban="sedang"):
     
     llm = ChatOllama(model="llama3", temperature=0)
     
-    # Ambil 20 potongan teks biar lebih akurat
-    dokumen_ketemu = vektor_db.similarity_search(pertanyaan, k=20)
-    teks_konteks = "\n\n".join([doc.page_content for doc in dokumen_ketemu])
+    # PERBAIKAN 1: Turunin k jadi 5 (biar AI fokus) & pakai with_score buat ngecek relevansi
+    dokumen_dengan_skor = vektor_db.similarity_search_with_score(pertanyaan, k=5)
     
-    # --- BARU: AMBIL METADATA (FILE & HALAMAN) ---
-    sumber_file = ""
-    halaman = 1
+    # PERBAIKAN 2: Filter dokumen. (Catatan: Chroma pake L2 distance, makin KECIL skornya = makin mirip).
+    # Threshold 1.5 ini angka aman buat nomic-embed-text, bisa lu naik-turunin (1.0 - 1.8) sesuai hasil tes.
+    dokumen_valid = []
+    skor_terbaik = 0
     
-    if len(dokumen_ketemu) > 0:
-        # Ambil metadata dari dokumen yang paling relevan (ranking 1 / index 0)
-        sumber_asli = dokumen_ketemu[0].metadata.get('source', '')
-        
-        # PyPDFLoader index halamannya mulai dari 0, jadi kita +1 biar pas sama PDF aslinya
-        halaman = dokumen_ketemu[0].metadata.get('page', 0) + 1 
-        
-        # Bersihkan path, ambil nama filenya aja (misal: dari "data_pdf/UU_No_1.pdf" jadi "UU_No_1.pdf")
-        sumber_file = os.path.basename(sumber_asli)
+    for doc, score in dokumen_dengan_skor:
+        if score < 1.5:  # Kalau jaraknya di bawah 1.5, berarti nyambung
+            dokumen_valid.append(doc)
+            # Konversi L2 distance ke persentase akurasi (kasarannya aja buat di UI)
+            skor_sementara = max(0.0, 1.0 - (score / 2.0))
+            if skor_sementara > skor_terbaik:
+                skor_terbaik = skor_sementara
+
+    # Kalau nggak ada dokumen yang lolos filter kemiripan, langsung tolak di backend!
+    if not dokumen_valid:
+        jawaban_kosong = "Maaf, informasi mengenai pertanyaan tersebut tidak ditemukan di dalam dokumen K3 kami."
+        riwayat_chat.append({"user": pertanyaan, "ai": jawaban_kosong})
+        return jawaban_kosong, 0.0, "", 0
+
+    # Kalau ada, gabungin teksnya
+    teks_konteks = "\n\n".join([doc.page_content for doc in dokumen_valid])
+    
+    # Ambil metadata dari dokumen yang paling relevan (ranking 1)
+    sumber_file = os.path.basename(dokumen_valid[0].metadata.get('source', ''))
+    halaman = dokumen_valid[0].metadata.get('page', 0) + 1 
 
     teks_history = ""
     for obrolan in riwayat_chat:
@@ -65,41 +76,39 @@ def tanya_bot_k3(pertanyaan, panjang_jawaban="sedang"):
 
     # --- LOGIKA INSTRUKSI PANJANG JAWABAN ---
     if panjang_jawaban == "pendek":
-        instruksi_panjang = "Jawablah dengan SANGAT SINGKAT, PADAT, dan LANGSUNG pada intinya (maksimal 1-2 paragraf pendek)."
+        instruksi_panjang = "Jawablah dengan SANGAT SINGKAT (maksimal 2 kalimat)."
     elif panjang_jawaban == "panjang":
-        instruksi_panjang = "Jawablah dengan SANGAT DETAIL, KOMPREHENSIF, dan jelaskan poin-poinnya secara mendalam."
+        instruksi_panjang = "Jawablah dengan SANGAT DETAIL dan sebutkan poin-poinnya secara mendalam."
     else:
-        instruksi_panjang = "Jawablah dengan panjang SEDANG, cukup informatif namun tidak bertele-tele."
+        instruksi_panjang = "Jawablah dengan panjang SEDANG."
 
+    # PERBAIKAN 3: Prompt diganti Full Bahasa Indonesia biar AI nggak bingung konteks
     prompt_ke_ai = f"""
-    Kamu adalah asisten sistem K3 yang JUJUR dan KAKU. 
-    Tugasmu HANYA menjawab berdasarkan DOKUMEN K3 di bawah.
-    
-    ATURAN:
-    1. You MUST write your response ENTIRELY in formal BAHASA INDONESIA. DO NOT output any English words!
-    2. If the answer is NOT found in the text, you must say: "Maaf, informasi tidak ditemukan." You may add a suggestion for relevant documents if applicable. DO NOT make up your own answer.
-    3. DO NOT use outside knowledge. Rely ONLY on the provided document.
-    4. If the answer is found, you MUST include the source document file name in your response.
-    5. {instruksi_panjang}
-    
-    --- RIWAYAT ---
-    {teks_history}
+Kamu adalah asisten ahli K3 (Keselamatan dan Kesehatan Kerja) yang SANGAT KAKU dan HANYA MENGANDALKAN DOKUMEN.
 
-    --- DOKUMEN ---
-    {teks_konteks}
-    
-    --- PERTANYAAN ---
-    {pertanyaan}
-    
-    Jawaban:"""
+ATURAN WAJIB (JIKA DILANGGAR SISTEM AKAN RUSAK):
+1. JAWAB HANYA BERDASARKAN DOKUMEN KONTEKS DI BAWAH INI. Jangan pernah menggunakan pengetahuan di luar dokumen.
+2. Jika dokumen konteks tidak membahas sama sekali tentang pertanyaan, jawab PERSIS seperti ini: "Maaf, informasi tidak ditemukan di dalam dokumen."
+3. JANGAN PERNAH mengarang singkatan, teori, atau menebak-nebak jawaban.
+4. Gunakan bahasa Indonesia baku dan formal.
+5. {instruksi_panjang}
+
+--- RIWAYAT OBROLAN ---
+{teks_history}
+
+--- DOKUMEN KONTEKS ---
+{teks_konteks}
+
+--- PERTANYAAN USER ---
+{pertanyaan}
+
+Jawaban Asisten K3:"""
     
     jawaban_ai = llm.invoke(prompt_ke_ai).content
     riwayat_chat.append({"user": pertanyaan, "ai": jawaban_ai})
-    if len(riwayat_chat) > 3: riwayat_chat.pop(0)
+    
+    if len(riwayat_chat) > 3: 
+        riwayat_chat.pop(0)
 
-    # Menambahkan skor default agar unpacking tidak error.
-    # Ingat untuk mengganti ini dengan perhitungan skor sebenarnya nanti.
-    skor_ai = 0.99
-        
-    # --- BARU: Return sumber_file dan halaman juga ke views.py ---
-    return jawaban_ai, skor_ai, sumber_file, halaman
+    # Return pake skor kemiripan asli, bukan 0.99 hardcode lagi
+    return jawaban_ai, skor_terbaik, sumber_file, halaman

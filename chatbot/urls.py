@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import analisis_akurasi_view
 
 urlpatterns = [
     # Ganti views.chat_view jadi views.halaman_utama
@@ -15,4 +16,5 @@ urlpatterns = [
     
     # Tambahin baris ini di dalem list urlpatterns lu ya:
     path('api/hapus/<str:session_id>/', views.hapus_sesi, name='hapus_sesi'),
+    path('analisis/', analisis_akurasi_view, name='analisis_akurasi'),
 ]
