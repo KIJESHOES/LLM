@@ -1,23 +1,24 @@
-<div id="landing-page" class="absolute inset-0 z-50 bg-slate-50 dark:bg-slate-900 overflow-y-auto overflow-x-hidden transition-all duration-500 scroll-smooth">
+<div id="landing-page" class="absolute inset-0 z-40 bg-slate-50 dark:bg-slate-900 overflow-y-auto overflow-x-hidden transition-all duration-500 scroll-smooth">
     
-    <div class="min-h-screen flex flex-col items-center justify-center px-6 text-center pt-20 pb-20 relative">
+    <div class="min-h-[90vh] flex flex-col items-center justify-center px-6 text-center pt-20 pb-20 relative">
         <div class="max-w-4xl fade-in z-10">
-            <div class="bg-blue-100 dark:bg-blue-900/50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 shadow-sm ring-4 ring-blue-50 dark:ring-blue-900/30">
-                <span class="text-5xl">🛡️</span>
-            </div>
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-bold tracking-wide uppercase mb-6 border border-blue-100 dark:border-blue-800">
-                <span class="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></span> Sistem Informasi Skripsi
-            </div>
             <h1 class="text-5xl md:text-7xl font-black text-slate-800 dark:text-white mb-6 tracking-tight leading-[1.1]">
                 Eksplorasi Aturan K3 Lebih Cerdas dengan <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 dark:from-blue-400 dark:to-cyan-300">AI K3 PRO</span>
             </h1>
             <p class="text-lg md:text-xl text-slate-500 dark:text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
                 Asisten pintar berbasis <span class="font-semibold text-slate-700 dark:text-slate-300">Large Language Model (LLM) & RAG</span> untuk menganalisis dokumen peraturan JDIH Kemnaker RI secara akurat dan <i>real-time</i>.
             </p>
+            
             <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <button onclick="bukaSistem()" class="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-bold py-4 px-10 rounded-2xl shadow-xl shadow-blue-500/30 transition-all transform hover:-translate-y-1 w-full sm:w-auto text-lg flex items-center justify-center gap-2">
-                    Mulai Konsultasi AI <span>→</span>
-                </button>
+                {% if user.is_authenticated %}
+                    <button onclick="bukaSistem()" class="bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white font-bold py-4 px-10 rounded-2xl shadow-xl shadow-green-500/30 transition-all transform hover:-translate-y-1 w-full sm:w-auto text-lg flex items-center justify-center gap-2">
+                        Lanjutkan ke Chat <span>💬</span>
+                    </button>
+                {% else %}
+                    <a href="{% url 'login' %}" class="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-bold py-4 px-10 rounded-2xl shadow-xl shadow-blue-500/30 transition-all transform hover:-translate-y-1 w-full sm:w-auto text-lg flex items-center justify-center gap-2 text-center">
+                        Login untuk Mulai <span>→</span>
+                    </a>
+                {% endif %}
                 <a href="#latar-belakang" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-semibold py-4 px-10 rounded-2xl shadow-sm transition-all w-full sm:w-auto text-lg">
                     Pelajari Sistem
                 </a>
@@ -168,7 +169,7 @@
                 </div>
                 <div class="p-6 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700">
                     <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Darimana sumber data peraturan yang digunakan?</h3>
-                    <p class="text-slate-600 dark:text-slate-400 text-sm">Semua data latih (konteks dokumen) diambil secara legal dari portal resmi Jaringan Dokumentasi dan Informasi Hukum (JDIH) Kementerian Ketenagakerjaan Republik Indonesia.</p>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">Semua data latih (konteks dokumen) diambil secara legal dari portal resmi JDIH Kementerian Ketenagakerjaan Republik Indonesia.</p>
                 </div>
                 <div class="p-6 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700">
                     <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Bagaimana cara sistem mengukur akurasi?</h3>
@@ -182,9 +183,16 @@
         <div class="max-w-3xl mx-auto">
             <h2 class="text-4xl font-black text-white mb-6">Siap Mencoba AI K3 PRO?</h2>
             <p class="text-blue-100 text-lg mb-10">Mulai interaksi Anda sekarang dan rasakan kemudahan mencari pasal regulasi tanpa harus membuka puluhan file PDF.</p>
-            <button onclick="bukaSistem()" class="bg-white text-blue-600 font-black py-4 px-12 rounded-2xl shadow-2xl hover:bg-slate-50 transition-all transform hover:scale-105 text-lg">
-                Buka Dashboard Utama
-            </button>
+            
+            {% if user.is_authenticated %}
+                <button onclick="bukaSistem()" class="bg-white text-green-600 font-black py-4 px-12 rounded-2xl shadow-2xl hover:bg-slate-50 transition-all transform hover:scale-105 text-lg inline-block flex items-center justify-center gap-2 mx-auto">
+                    Lanjutkan Obrolan <span>💬</span>
+                </button>
+            {% else %}
+                <a href="{% url 'login' %}" class="bg-white text-blue-600 font-black py-4 px-12 rounded-2xl shadow-2xl hover:bg-slate-50 transition-all transform hover:scale-105 text-lg inline-block">
+                    Login / Daftar Sekarang
+                </a>
+            {% endif %}
         </div>
     </div>
 

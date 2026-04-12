@@ -1,7 +1,5 @@
 from django.db import models
-
-from django.db import models
-
+from django.contrib.auth.models import User
 class LogAkurasi(models.Model):
     pertanyaan = models.TextField()
     jawaban_ai = models.TextField()
@@ -21,8 +19,11 @@ import uuid
 
 # Tabel untuk nyimpen "Room" atau Sesi Chat (yang muncul di Sidebar)
 class ChatSession(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    judul = models.CharField(max_length=255, default="Obrolan Baru")
+    # --- TAMBAHKAN BARIS INI ---
+    # null=True biar data history lama (yang belum ada user-nya) nggak bikin error database
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True) 
+    
+    judul = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

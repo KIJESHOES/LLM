@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - AI K3 PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        /* Styling khusus untuk merapikan struktur bawaan Django */
+        .django-form p {
+            margin-bottom: 1.25rem;
+        }
+        .django-form label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #334155; /* text-slate-700 */
+            margin-bottom: 0.5rem;
+        }
+        .dark .django-form label {
+            color: #cbd5e1; /* text-slate-300 */
+        }
+        .django-form .helptext {
+            display: block;
+            font-size: 0.75rem;
+            color: #64748b; /* text-slate-500 */
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+        .dark .django-form .helptext {
+            color: #94a3b8; /* text-slate-400 */
+        }
+        .django-form ul.errorlist {
+            margin-top: 0.25rem;
+            margin-bottom: 0.5rem;
+            padding-left: 1rem;
+            list-style-type: disc;
+        }
+        .django-form ul.errorlist li {
+            color: #ef4444; /* text-red-500 */
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 min-h-screen flex items-center justify-center p-6 transition-colors duration-300">
+
+    <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 p-8 sm:p-10 relative overflow-hidden">
+        <div class="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl"></div>
+
+        <div class="relative z-10 text-center mb-8">
+            <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm ring-4 ring-emerald-50 dark:ring-emerald-900/30">
+                ✨
+            </div>
+            <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Buat Akun</h1>
+            <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm">Daftar sekarang untuk mengakses AI K3 PRO</p>
+        </div>
+
+        <form method="POST" class="relative z-10 django-form">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="p-3 mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            {{ form.as_p }}
+
+            <button type="submit" 
+                class="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-500/30 transition-all transform hover:-translate-y-0.5 mt-4">
+                Daftar Sekarang
+            </button>
+        </form>
+
+        <div class="mt-8 text-center relative z-10 space-y-3">
+            <p class="text-sm text-slate-600 dark:text-slate-300">
+                Sudah punya akun? <a href="/login/" class="font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline transition-colors">Login di sini</a>
+            </p>
+            <div class="border-t border-slate-100 dark:border-slate-700/60 w-1/2 mx-auto mt-4 mb-2"></div>
+            <p class="text-xs text-slate-500 dark:text-slate-500 mt-2">
+                Kembali ke <a href="/" class="font-semibold text-slate-500 dark:text-slate-400 hover:underline">Halaman Utama</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const inputs = document.querySelectorAll(".django-form input");
+            inputs.forEach(input => {
+                // Jangan ubah styling kalau inputnya tipe hidden atau checkbox/radio
+                if (input.type !== 'hidden' && input.type !== 'checkbox' && input.type !== 'radio') {
+                    input.className = "w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-800 dark:text-white transition-all outline-none mt-1";
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

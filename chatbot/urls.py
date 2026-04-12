@@ -4,7 +4,9 @@ from . import views
 urlpatterns = [
     # Ganti views.chat_view jadi views.halaman_utama
     path('', views.halaman_utama, name='halaman_utama'),
-    
+    path('login/', views.login_view, name='login'),
+    path('register/', views.register_view, name='register'),
+    path('logout/', views.logout_view, name='logout'),
     # API buat ngirim pesan
     path('api/chat/', views.api_chat, name='api_chat'),
     

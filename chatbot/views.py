@@ -1,19 +1,67 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, logout
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 import json
-import time # Pastikan ini ada
+import time 
 from .models import ChatSession, ChatMessage
 from .utils import tanya_bot_k3 
 
+# ==========================================
+# 1. FUNGSI AUTENTIKASI (LOGIN & REGISTER)
+# ==========================================
+def register_view(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('halaman_utama')
+    else:
+        form = UserCreationForm()
+    # Ini render login/register biarin ke filenya masing-masing
+    return render(request, 'register.html', {'form': form})
+
+def login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('halaman_utama')
+    else:
+        form = AuthenticationForm()
+    return render(request, 'login.html', {'form': form})
+
+def logout_view(request):
+    if request.method == 'POST':
+        logout(request)
+        return redirect('halaman_utama')
+
+# ==========================================
+# 2. FUNGSI UTAMA & CHAT
+# ==========================================
 def halaman_utama(request):
-    semua_sesi = ChatSession.objects.all().order_by('-updated_at')
+    # 1. Kalau BELUM LOGIN, lempar ke index.html biar index.html yang nampilin landing page
+    if not request.user.is_authenticated:
+        return render(request, 'index.html')
+
+    # 2. Kalau SUDAH LOGIN, tarik riwayat sesinya
+    semua_sesi = ChatSession.objects.filter(user=request.user).order_by('-updated_at')
+    
+    # 3. Cek apakah dia Admin atau User biasa, biar index.html lu bisa ngatur nampilin dashboard atau chat
     context = {
-        'riwayat_sesi': semua_sesi
+        'riwayat_sesi': semua_sesi,
+        'is_admin': request.user.is_staff or request.user.is_superuser 
     }
+    
+    # 👇 BALIKIN KE SINI. Wajib pake index.html biar CSS Tailwind lu nyala lagi!
     return render(request, 'index.html', context)
 
 @csrf_exempt
+@login_required(login_url='/login/')
 def api_chat(request):
     if request.method == 'POST':
         try:
@@ -21,34 +69,23 @@ def api_chat(request):
             pesan_user = data.get('pesan')
             session_id = data.get('session_id')
             
-            # --- BARU: TANGKAP PANJANG JAWABAN ---
-            # Default ke 'sedang' kalau misal dari frontend kosong
             panjang_jawaban = data.get('panjang_jawaban', 'sedang') 
-            
-            # --- 1. MULAI HITUNG WAKTU DI SINI ---
             start_time = time.time()
 
-            # Logika Sesi
             if not session_id:
                 judul_baru = pesan_user[:30] + "..." if len(pesan_user) > 30 else pesan_user
-                sesi = ChatSession.objects.create(judul=judul_baru)
+                sesi = ChatSession.objects.create(judul=judul_baru, user=request.user)
             else:
-                sesi = ChatSession.objects.get(id=session_id)
+                sesi = ChatSession.objects.get(id=session_id, user=request.user)
                 sesi.save()
 
-            # Simpan pertanyaan User
             ChatMessage.objects.create(session=sesi, role='user', content=pesan_user)
 
-            # --- 2. PROSES AI ---
-            # Sekarang variabel panjang_jawaban udah terdefinisi
             jawaban_ai, skor_ai, sumber_file, halaman = tanya_bot_k3(pesan_user, panjang_jawaban)
 
-            # --- 3. SELESAI HITUNG WAKTU ---
             end_time = time.time()
-            durasi = round(end_time - start_time, 2) # Hasil dalam detik (misal: 1.45)
+            durasi = round(end_time - start_time, 2)
 
-            # 4. Simpan jawaban AI ke database 
-            # (PENTING: Pastikan kolom 'waktu_proses' sudah ada di models.py)
             ChatMessage.objects.create(
                 session=sesi, 
                 role='ai', 
@@ -57,36 +94,39 @@ def api_chat(request):
                 skor_akurasi=skor_ai
             )
 
-            # --- 5. KIRIM BALIKAN KE FRONTEND ---
             return JsonResponse({
                 'jawaban': jawaban_ai, 
                 'skor': skor_ai,
                 'session_id': str(sesi.id),
                 'judul': sesi.judul,
                 'waktu': durasi, 
-                'sumber_file': sumber_file, # <--- BARU: Kirim nama file PDF
-                'halaman': halaman          # <--- BARU: Kirim nomor halaman
+                'sumber_file': sumber_file,
+                'halaman': halaman 
             })
             
         except Exception as e:
-            # Biar gampang debug kalau ada error lain
             print("Error di api_chat:", e)
             return JsonResponse({'error': str(e)}, status=500)
             
     return JsonResponse({'error': 'Invalid Request'}, status=400)
         
+# ==========================================
+# 3. FUNGSI RIWAYAT CHAT
+# ==========================================
+@login_required(login_url='/login/')
 def hapus_sesi(request, session_id):
     if request.method == 'POST' or request.method == 'DELETE':
         try:
-            sesi = ChatSession.objects.get(id=session_id)
+            sesi = ChatSession.objects.get(id=session_id, user=request.user)
             sesi.delete()
             return JsonResponse({'status': 'success'})
         except ChatSession.DoesNotExist:
             return JsonResponse({'status': 'error', 'pesan': 'Sesi tidak ditemukan'}, status=404)
 
+@login_required(login_url='/login/')
 def get_history(request, session_id):
     try:
-        sesi = ChatSession.objects.get(id=session_id)
+        sesi = ChatSession.objects.get(id=session_id, user=request.user)
         pesan_pesan = sesi.messages.all().order_by('created_at')
         
         data_pesan = []
@@ -95,7 +135,7 @@ def get_history(request, session_id):
                 'role': p.role,
                 'content': p.content,
                 'skor': p.skor_akurasi,
-                'waktu': p.waktu_proses # Sertakan waktu agar muncul saat history diklik
+                'waktu': p.waktu_proses 
             })
             
         return JsonResponse({'status': 'ok', 'messages': data_pesan})
