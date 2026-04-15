@@ -157,8 +157,11 @@ def get_history(request, session_id):
             data_pesan.append({
                 'role': p.role,
                 'content': p.content,
-                'skor': p.skor_akurasi,
-                'waktu': p.waktu_proses 
+                # Pake getattr biar aman jaya kalau kolomnya emang ga ada di database
+                'sumber_file': getattr(p, 'sumber_file', ""), 
+                'halaman': getattr(p, 'halaman', 1), # <--- INI PENYELAMATNYA BOS
+                'skor': getattr(p, 'skor', 0),
+                'waktu': getattr(p, 'waktu', 0)
             })
             
         return JsonResponse({'status': 'ok', 'messages': data_pesan})

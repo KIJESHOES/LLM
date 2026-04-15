@@ -38,6 +38,7 @@ class ChatMessage(models.Model):
     waktu_proses = models.FloatField(default=0.0)
     skor_akurasi = models.FloatField(null=True, blank=True) # Cuma diisi kalau role == 'ai'
     created_at = models.DateTimeField(auto_now_add=True)
-
+    sumber_file = models.CharField(max_length=255, null=True, blank=True)
+    
     def __str__(self):
         return f"[{self.role}] {self.content[:50]}..."

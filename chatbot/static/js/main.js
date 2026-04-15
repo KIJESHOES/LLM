@@ -74,6 +74,7 @@ function chatBaru() {
 }
 
 // FUNGSI BUAT NARIK HISTORY DARI DATABASE
+// FUNGSI BUAT NARIK HISTORY DARI DATABASE
 async function bukaHistory(sessionId) {
     switchTab('chat');
     currentSessionId = sessionId; // Set ID sesi yang dipilih
@@ -99,14 +100,42 @@ async function bukaHistory(sessionId) {
                             </div>
                         </div>`;
                 } else {
-                    // TAMPILAN AI (ADA AKURASI & WAKTU)
+                    // 👇👇👇 BAGIAN INI YANG GUE TAMBAHIN (Logika PDF History) 👇👇👇
+                    let pdfPreviewHtml = "";
+                    if (msg.sumber_file && msg.sumber_file !== "") {
+                        // Antisipasi kalau halaman kosong
+                        let halaman = msg.halaman || '-';
+                        let pdfUrl = `/static/data_pdf/${msg.sumber_file}#page=${msg.halaman || 1}`;
+                        
+                        pdfPreviewHtml = `
+                            <div class="mt-5 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800/50">
+                                <div class="px-4 py-3 bg-slate-100 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xl">📄</span>
+                                        <span class="text-[13px] font-bold text-slate-700 dark:text-slate-200">
+                                            Referensi: ${msg.sumber_file} <span class="text-blue-500">(Hal. ${halaman})</span>
+                                        </span>
+                                    </div>
+                                    <a href="${pdfUrl}" target="_blank" class="text-[12px] text-blue-600 hover:text-blue-800 dark:text-blue-400 font-bold transition-colors bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-600">Buka Penuh ↗</a>
+                                </div>
+                                <iframe src="${pdfUrl}" class="w-full h-[400px] border-none" title="Preview PDF"></iframe>
+                            </div>
+                        `;
+                    }
+                    // 👆👆👆 SAMPAI SINI 👆👆👆
+
+                    // TAMPILAN AI (ADA AKURASI, WAKTU & PDF-NYA)
                     chatBox.innerHTML += `
                         <div class="flex items-start gap-4 fade-in max-w-4xl mb-6">
                             <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
                             <div class="flex flex-col gap-2 max-w-[85%] w-full">
                                 <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed w-full">
-                                    ${msg.content.replace(/\n/g, '<br>')}
-                                </div>
+                                    
+                                    <div class="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-200">
+                                        ${msg.content.replace(/\n/g, '<br>')}
+                                    </div>
+
+                                    ${pdfPreviewHtml} </div>
                                 
                                 <div class="flex flex-wrap items-center gap-4 px-2 mt-1">
                                     <div class="flex items-center gap-2">
@@ -332,5 +361,25 @@ async function hapusHistory(sessionId, event) {
             console.error("Error:", error);
             alert("Terjadi kesalahan sistem saat menghapus.");
         }
+    }
+}
+
+function kembaliKeLanding() {
+    const areaLanding = document.getElementById('area-landing');
+    const areaChat = document.getElementById('area-chat');
+    const areaDashboard = document.getElementById('area-dashboard');
+    const sidebar = document.getElementById('sidebar');
+
+    // 1. Sembunyikan Chat dan Dashboard
+    if (areaChat) areaChat.classList.add('hidden');
+    if (areaDashboard) areaDashboard.classList.add('hidden');
+    
+    // 2. Tutup sidebar biar rapi (opsional)
+    if (sidebar) sidebar.classList.add('hidden');
+
+    // 3. Munculin Landing Page
+    if (areaLanding) {
+        areaLanding.classList.remove('hidden');
+        areaLanding.classList.add('flex'); // Bikin tampil full
     }
 }
