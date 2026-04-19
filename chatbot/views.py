@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from django.contrib import messages # <-- TAMBAHAN: Untuk nampilin notifikasi error
+from django.contrib import messages
 import json
 import time 
 from .models import ChatSession, ChatMessage
@@ -22,7 +22,6 @@ def register_view(request):
             return redirect('halaman_utama')
     else:
         form = UserCreationForm()
-    # Ini render login/register biarin ke filenya masing-masing
     return render(request, 'register.html', {'form': form})
 
 def login_view(request):
@@ -45,41 +44,32 @@ def logout_view(request):
 # 2. FUNGSI UTAMA, CHAT & DASHBOARD
 # ==========================================
 def halaman_utama(request):
-    # 1. Kalau BELUM LOGIN, lempar ke index.html biar index.html yang nampilin landing page
     if not request.user.is_authenticated:
         return render(request, 'index.html')
 
-    # 2. Kalau SUDAH LOGIN, tarik riwayat sesinya
     semua_sesi = ChatSession.objects.filter(user=request.user).order_by('-updated_at')
     
-    # 3. Cek apakah dia Admin atau User biasa, biar index.html lu bisa ngatur nampilin dashboard atau chat
     context = {
         'riwayat_sesi': semua_sesi,
         'is_admin': request.user.is_staff or request.user.is_superuser 
     }
     
-    # 👇 BALIKIN KE SINI. Wajib pake index.html biar CSS Tailwind lu nyala lagi!
     return render(request, 'index.html', context)
 
 
-# 👇 TAMBAHAN BARU: FUNGSI KHUSUS ANALISIS AKURASI DENGAN PROTEKSI ADMIN
 @login_required(login_url='/login/')
 def analisis_akurasi_view(request):
-    # PROTEKSI: Cek apakah yang akses adalah admin/superuser
     if not (request.user.is_staff or request.user.is_superuser):
-        # Kalau bukan admin, kasih pesan error dan tendang ke halaman utama
         messages.error(request, "Akses ditolak! Halaman Analisis Akurasi khusus untuk Admin.")
         return redirect('halaman_utama')
     
-    # Kalau lolos (dia admin), siapkan data dashboard
     semua_sesi = ChatSession.objects.filter(user=request.user).order_by('-updated_at')
     context = {
         'riwayat_sesi': semua_sesi,
         'is_admin': True,
-        'tampilkan_dashboard': True # Variabel bantuan buat di index.html
+        'tampilkan_dashboard': True 
     }
     
-    # Tetap render index.html sebagai kerangka utamanya
     return render(request, 'index.html', context)
 
 
@@ -91,8 +81,8 @@ def api_chat(request):
             data = json.loads(request.body)
             pesan_user = data.get('pesan')
             session_id = data.get('session_id')
-            
             panjang_jawaban = data.get('panjang_jawaban', 'sedang') 
+            
             start_time = time.time()
 
             if not session_id:
@@ -102,19 +92,24 @@ def api_chat(request):
                 sesi = ChatSession.objects.get(id=session_id, user=request.user)
                 sesi.save()
 
+            # Simpan pesan User
             ChatMessage.objects.create(session=sesi, role='user', content=pesan_user)
 
+            # Tarik dari backend/RAG
             jawaban_ai, skor_ai, sumber_file, halaman = tanya_bot_k3(pesan_user, panjang_jawaban)
 
             end_time = time.time()
             durasi = round(end_time - start_time, 2)
 
+            # 👇 PERBAIKAN UTAMA: Simpan file dan halaman ke Database! 👇
             ChatMessage.objects.create(
                 session=sesi, 
                 role='ai', 
                 content=jawaban_ai, 
                 waktu_proses=durasi, 
-                skor_akurasi=skor_ai
+                skor_akurasi=skor_ai,
+                sumber_file=sumber_file, # <--- SEBELUMNYA LU LUPA NAMBAHIN INI
+                halaman=halaman          # <--- SEBELUMNYA LU LUPA NAMBAHIN INI
             )
 
             return JsonResponse({
@@ -157,11 +152,11 @@ def get_history(request, session_id):
             data_pesan.append({
                 'role': p.role,
                 'content': p.content,
-                # Pake getattr biar aman jaya kalau kolomnya emang ga ada di database
+                # 👇 PERBAIKAN: Tarik data file dan sesuaikan nama kolom skor/waktu 👇
                 'sumber_file': getattr(p, 'sumber_file', ""), 
-                'halaman': getattr(p, 'halaman', 1), # <--- INI PENYELAMATNYA BOS
-                'skor': getattr(p, 'skor', 0),
-                'waktu': getattr(p, 'waktu', 0)
+                'halaman': getattr(p, 'halaman', ""),
+                'skor': getattr(p, 'skor_akurasi', 0), # Sesuaikan dengan nama field lu
+                'waktu': getattr(p, 'waktu_proses', 0) # Sesuaikan dengan nama field lu
             })
             
         return JsonResponse({'status': 'ok', 'messages': data_pesan})

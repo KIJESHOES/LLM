@@ -139,9 +139,8 @@
             </nav>
         </aside>
         {% endif %}
-
         <main class="flex-1 flex flex-col h-full overflow-hidden relative">
-            <div id="area-landing" class="hidden absolute inset-0 z-50 bg-white dark:bg-slate-900">
+            <div id="area-landing" class="{% if user.is_authenticated %}hidden{% else %}flex{% endif %} absolute inset-0 z-50 bg-white dark:bg-slate-900 flex-col">
                 {% include 'partials/landing.html' %}
             </div>
             

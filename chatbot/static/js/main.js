@@ -1,15 +1,22 @@
-// Tangkap elemen-elemen DOM
-const landingPage = document.getElementById('landing-page');
+// ==========================================
+// 1. TANGKAP ELEMEN DOM (Udah disamain ID-nya)
+// ==========================================
+const areaLanding = document.getElementById('area-landing'); 
 const sidebar = document.getElementById('sidebar');
-const chatSec = document.getElementById('section-chat');
-const dashSec = document.getElementById('section-dashboard');
+const areaChat = document.getElementById('area-chat'); 
+const areaDashboard = document.getElementById('area-dashboard'); 
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 const htmlRoot = document.getElementById('html-root');
 const themeIcon = document.getElementById('theme-icon');
 
-// Cek memori lokal pas web dibuka, kemaren milih gelap apa terang?
+// Variabel Global
+let currentSessionId = null;
+
+// ==========================================
+// 2. DARK MODE TEMA
+// ==========================================
 if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
     htmlRoot.classList.add('dark');
     if (themeIcon) themeIcon.innerText = '☀️'; 
@@ -30,23 +37,38 @@ function toggleDarkMode() {
     }
 }
 
-// VARIABEL PENTING BUAT DATABASE
-let currentSessionId = null;
-
-// Navigasi UI
+// ==========================================
+// 3. NAVIGASI UI & TAB
+// ==========================================
 function bukaSistem() {
-    if (landingPage) landingPage.classList.add('opacity-0', 'pointer-events-none');
-    setTimeout(() => {
-        if (landingPage) landingPage.style.display = 'none';
-        if (sidebar) {
-            sidebar.classList.remove('hidden');
-            sidebar.classList.add('flex');
-        }
-        if (chatSec) {
-            chatSec.classList.remove('hidden');
-            chatSec.classList.add('flex');
-        }
-    }, 500);
+    if (areaLanding) areaLanding.classList.add('hidden'); // Sembunyikan landing
+    
+    if (sidebar) {
+        sidebar.classList.remove('hidden');
+        sidebar.classList.add('flex');
+    }
+    if (areaChat) {
+        areaChat.classList.remove('hidden');
+        areaChat.classList.add('flex');
+    }
+}
+
+function kembaliKeLanding() {
+    // Sembunyikan Chat dan Dashboard
+    if (areaChat) areaChat.classList.add('hidden');
+    if (areaChat) areaChat.classList.remove('flex');
+    if (areaDashboard) areaDashboard.classList.add('hidden');
+    if (areaDashboard) areaDashboard.classList.remove('flex', 'block');
+    
+    // Tutup sidebar
+    if (sidebar) sidebar.classList.add('hidden');
+    if (sidebar) sidebar.classList.remove('flex');
+
+    // Munculin Landing Page
+    if (areaLanding) {
+        areaLanding.classList.remove('hidden');
+        areaLanding.classList.add('flex'); 
+    }
 }
 
 function switchTab(tab) {
@@ -54,13 +76,15 @@ function switchTab(tab) {
     const mDash = document.getElementById('menu-dashboard');
     
     if(tab === 'chat') {
-        if (chatSec) { chatSec.classList.remove('hidden'); chatSec.classList.add('flex'); }
-        if (dashSec) dashSec.classList.add('hidden');
+        if (areaChat) { areaChat.classList.remove('hidden'); areaChat.classList.add('flex'); }
+        if (areaDashboard) { areaDashboard.classList.add('hidden'); areaDashboard.classList.remove('flex', 'block'); }
+        
         if (mChat) mChat.classList.add('bg-blue-50', 'border-blue-200', 'dark:bg-blue-900/30', 'dark:border-blue-800'); 
         if (mDash) mDash.classList.remove('active-menu');
     } else {
-        if (dashSec) { dashSec.classList.remove('hidden'); dashSec.classList.add('block'); } // atau flex tergantung desain lu
-        if (chatSec) chatSec.classList.add('hidden');
+        if (areaDashboard) { areaDashboard.classList.remove('hidden'); areaDashboard.classList.add('block'); } 
+        if (areaChat) { areaChat.classList.add('hidden'); areaChat.classList.remove('flex'); }
+        
         if (mDash) mDash.classList.add('active-menu'); 
         if (mChat) mChat.classList.remove('bg-blue-50', 'border-blue-200', 'dark:bg-blue-900/30', 'dark:border-blue-800');
         initChart(); // Render grafik saat tab dashboard dibuka
@@ -69,18 +93,25 @@ function switchTab(tab) {
 
 function chatBaru() {
     switchTab('chat');
-    currentSessionId = null; // Reset ID Sesi untuk obrolan baru
+    currentSessionId = null; // Reset ID Sesi
     if (chatBox) chatBox.innerHTML = ''; // Kosongkan layar chat
 }
 
-// FUNGSI BUAT NARIK HISTORY DARI DATABASE
-// FUNGSI BUAT NARIK HISTORY DARI DATABASE
+// ==========================================
+// 4. LOGIKA CHAT & HISTORY (SUDAH FIX PDF)
+// ==========================================
+function handleEnter(e) { 
+    if (e.key === 'Enter' && !e.shiftKey) { // Tambah shiftKey biar bisa enter baris baru
+        e.preventDefault();
+        kirimPesan(); 
+    } 
+}
+
 async function bukaHistory(sessionId) {
     switchTab('chat');
-    currentSessionId = sessionId; // Set ID sesi yang dipilih
+    currentSessionId = sessionId; 
     
-    if (!chatBox) return; // Jaga-jaga kalau chatBox ga ketemu
-    
+    if (!chatBox) return; 
     chatBox.innerHTML = `<div class="text-center text-slate-400 dark:text-slate-500 mt-10 animate-pulse">Memuat riwayat obrolan...</div>`;
 
     try {
@@ -88,24 +119,22 @@ async function bukaHistory(sessionId) {
         const data = await response.json();
 
         if (data.status === 'ok') {
-            chatBox.innerHTML = ''; // Kosongkan chatbox
+            chatBox.innerHTML = ''; 
             
-            // Render ulang pesan-pesan lama dari database
             data.messages.forEach(msg => {
                 if (msg.role === 'user') {
                     chatBox.innerHTML += `
                         <div class="flex justify-end fade-in w-full mb-6">
                             <div class="bg-slate-800 dark:bg-blue-600 text-white p-5 rounded-3xl rounded-tr-none shadow-md max-w-[75%] text-[15px]">
-                                ${msg.content}
+                                ${(msg.content || '').replace(/\n/g, '<br>')}
                             </div>
                         </div>`;
                 } else {
-                    // 👇👇👇 BAGIAN INI YANG GUE TAMBAHIN (Logika PDF History) 👇👇👇
+                    // LOGIKA TAMPILKAN PDF DI HISTORY
                     let pdfPreviewHtml = "";
                     if (msg.sumber_file && msg.sumber_file !== "") {
-                        // Antisipasi kalau halaman kosong
-                        let halaman = msg.halaman || '-';
-                        let pdfUrl = `/static/data_pdf/${msg.sumber_file}#page=${msg.halaman || 1}`;
+                        let halaman = msg.halaman || '1';
+                        let pdfUrl = `/static/data_pdf/${msg.sumber_file}#page=${halaman}`;
                         
                         pdfPreviewHtml = `
                             <div class="mt-5 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800/50">
@@ -119,23 +148,20 @@ async function bukaHistory(sessionId) {
                                     <a href="${pdfUrl}" target="_blank" class="text-[12px] text-blue-600 hover:text-blue-800 dark:text-blue-400 font-bold transition-colors bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-600">Buka Penuh ↗</a>
                                 </div>
                                 <iframe src="${pdfUrl}" class="w-full h-[400px] border-none" title="Preview PDF"></iframe>
-                            </div>
-                        `;
+                            </div>`;
                     }
-                    // 👆👆👆 SAMPAI SINI 👆👆👆
 
-                    // TAMPILAN AI (ADA AKURASI, WAKTU & PDF-NYA)
+                    // TAMPILAN JAWABAN AI
                     chatBox.innerHTML += `
                         <div class="flex items-start gap-4 fade-in max-w-4xl mb-6">
                             <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
                             <div class="flex flex-col gap-2 max-w-[85%] w-full">
                                 <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed w-full">
-                                    
                                     <div class="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-200">
-                                        ${msg.content.replace(/\n/g, '<br>')}
+                                        ${(msg.content || '').replace(/\n/g, '<br>')}
                                     </div>
-
-                                    ${pdfPreviewHtml} </div>
+                                    ${pdfPreviewHtml} 
+                                </div>
                                 
                                 <div class="flex flex-wrap items-center gap-4 px-2 mt-1">
                                     <div class="flex items-center gap-2">
@@ -166,38 +192,35 @@ async function bukaHistory(sessionId) {
     }
 }
 
-function handleEnter(e) { if (e.key === 'Enter') kirimPesan(); }
-
-// FUNGSI CHAT UTAMA
 async function kirimPesan() {
     if (!userInput) return;
     const pesan = userInput.value.trim();
     if (!pesan) return;
 
-    // UDAH DIPERBAIKI: Nyari ID 'panjang-jawaban' sesuai HTML baru lu
     const panjangJawaban = document.getElementById('panjang-jawaban') ? document.getElementById('panjang-jawaban').value : 'sedang';
 
-    // 1. Tampilkan pesan user di layar
+    // 1. Tampilkan pesan user
     chatBox.innerHTML += `
         <div class="flex justify-end fade-in w-full mb-6">
             <div class="bg-slate-800 dark:bg-blue-600 text-white p-5 rounded-3xl rounded-tr-none shadow-md max-w-[75%] text-[15px]">
-                ${pesan}
+                ${pesan.replace(/\n/g, '<br>')}
             </div>
         </div>`;
     
     userInput.value = '';
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    // 2. Tampilkan indikator loading AI
+    // 2. Loading State
     const loadingId = 'load-' + Date.now();
     chatBox.innerHTML += `
         <div id="${loadingId}" class="flex items-center gap-3 text-slate-400 dark:text-slate-500 animate-pulse italic text-sm mb-6">
             <div class="w-2 h-2 bg-blue-400 rounded-full"></div> AI sedang menganalisis dokumen...
         </div>`;
 
-    // 3. Kirim ke Backend Django
+    // 3. Kirim via API
     try {
-        const tokenCSRF = document.getElementById('csrf_token') ? document.getElementById('csrf_token').value : '';
+        const csrfElement = document.querySelector('[name=csrfmiddlewaretoken]') || document.getElementById('csrf_token');
+        const tokenCSRF = csrfElement ? csrfElement.value : '';
         
         const response = await fetch('/api/chat/', {
             method: 'POST',
@@ -225,7 +248,7 @@ async function kirimPesan() {
         // --- PREVIEW PDF ---
         let pdfPreviewHtml = "";
         if (data.sumber_file && data.sumber_file !== "") {
-            let pdfUrl = `/static/data_pdf/${data.sumber_file}#page=${data.halaman}`;
+            let pdfUrl = `/static/data_pdf/${data.sumber_file}#page=${data.halaman || 1}`;
             
             pdfPreviewHtml = `
                 <div class="mt-5 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800/50">
@@ -233,29 +256,25 @@ async function kirimPesan() {
                         <div class="flex items-center gap-2">
                             <span class="text-xl">📄</span>
                             <span class="text-[13px] font-bold text-slate-700 dark:text-slate-200">
-                                Referensi: ${data.sumber_file} <span class="text-blue-500">(Hal. ${data.halaman})</span>
+                                Referensi: ${data.sumber_file} <span class="text-blue-500">(Hal. ${data.halaman || 1})</span>
                             </span>
                         </div>
                         <a href="${pdfUrl}" target="_blank" class="text-[12px] text-blue-600 hover:text-blue-800 dark:text-blue-400 font-bold transition-colors bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-600">Buka Penuh ↗</a>
                     </div>
                     <iframe src="${pdfUrl}" class="w-full h-[400px] border-none" title="Preview PDF"></iframe>
-                </div>
-            `;
+                </div>`;
         }
 
-        // 4. TAMPILAN AI 
+        // 4. TAMPILAN AI
         chatBox.innerHTML += `
             <div class="flex items-start gap-4 fade-in max-w-4xl mb-6 w-full">
                 <div class="bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-xs font-bold">AI</div>
                 <div class="flex flex-col gap-2 max-w-[85%] w-full">
                     <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 p-6 rounded-3xl rounded-tl-none shadow-sm text-[15px] leading-relaxed w-full">
-                        
                         <div class="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-200">
-                            ${data.jawaban.replace(/\n/g, '<br>')}
+                            ${(data.jawaban || '').replace(/\n/g, '<br>')}
                         </div>
-                        
                         ${pdfPreviewHtml}
-
                     </div>
                     
                     <div class="flex flex-wrap items-center gap-4 px-2 mt-1">
@@ -276,24 +295,51 @@ async function kirimPesan() {
                 </div>
             </div>`;
         
-        // Refresh halaman otomatis kalau ini chat pertama (Biar masuk ke list history)
+        // Refresh kalau ini pesan pertama biar muncul di sidebar
         if (chatBox.querySelectorAll('.flex.justify-end').length === 1) {
-            setTimeout(() => location.reload(), 2000); 
+            setTimeout(() => location.reload(), 1500); 
         }
 
     } catch (e) {
         console.error("Gagal kirim pesan:", e);
         if (document.getElementById(loadingId)) {
-            document.getElementById(loadingId).innerText = "Error koneksi server. Pastikan Django sedang berjalan.";
+            document.getElementById(loadingId).innerHTML = `<span class="text-red-500">❌ Error: Gagal terhubung ke server Django.</span>`;
         }
     }
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Setup Chart.js
+async function hapusHistory(sessionId, event) {
+    event.stopPropagation();
+    if (confirm("Yakin mau hapus riwayat chat ini?")) {
+        try {
+            const csrfElement = document.querySelector('[name=csrfmiddlewaretoken]') || document.getElementById('csrf_token');
+            const tokenCSRF = csrfElement ? csrfElement.value : '';
+            
+            const response = await fetch(`/api/hapus/${sessionId}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': tokenCSRF }
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                location.reload(); 
+            } else {
+                alert("Gagal menghapus riwayat!");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Terjadi kesalahan sistem saat menghapus.");
+        }
+    }
+}
+
+// ==========================================
+// 5. CHART DASHBOARD (AKURASI)
+// ==========================================
 function initChart() {
     const canvasElement = document.getElementById('accuracyChart');
-    if (!canvasElement) return; // Jangan paksa render kalau ga ada canvas-nya
+    if (!canvasElement) return; 
 
     const ctx = canvasElement.getContext('2d');
     if (window.myChart) window.myChart.destroy();
@@ -338,48 +384,4 @@ function initChart() {
             plugins: { legend: { display: false } }
         }
     });
-}
-
-// FUNGSI HAPUS HISTORY
-async function hapusHistory(sessionId, event) {
-    event.stopPropagation();
-    if (confirm("Yakin mau hapus riwayat chat ini?")) {
-        try {
-            const tokenCSRF = document.getElementById('csrf_token') ? document.getElementById('csrf_token').value : '';
-            const response = await fetch(`/api/hapus/${sessionId}/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': tokenCSRF }
-            });
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                location.reload(); 
-            } else {
-                alert("Gagal menghapus riwayat!");
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            alert("Terjadi kesalahan sistem saat menghapus.");
-        }
-    }
-}
-
-function kembaliKeLanding() {
-    const areaLanding = document.getElementById('area-landing');
-    const areaChat = document.getElementById('area-chat');
-    const areaDashboard = document.getElementById('area-dashboard');
-    const sidebar = document.getElementById('sidebar');
-
-    // 1. Sembunyikan Chat dan Dashboard
-    if (areaChat) areaChat.classList.add('hidden');
-    if (areaDashboard) areaDashboard.classList.add('hidden');
-    
-    // 2. Tutup sidebar biar rapi (opsional)
-    if (sidebar) sidebar.classList.add('hidden');
-
-    // 3. Munculin Landing Page
-    if (areaLanding) {
-        areaLanding.classList.remove('hidden');
-        areaLanding.classList.add('flex'); // Bikin tampil full
-    }
 }
